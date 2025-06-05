@@ -1,17 +1,17 @@
 ﻿#pragma once
 
-#include <complex>
-#include <driver/i2s_types.h>
-#include <driver/i2s_std.h>
+#include <algorithm>
 #include <array>
 #include <atomic>
+#include <complex>
 #include <cstring>
+#include <driver/i2s_std.h>
+#include <driver/i2s_types.h>
 #include <esp_err.h>
 #include <ranges>
-#include <algorithm>
 
-#include "ThreadManager.h"
 #include "BeatDetector.h"
+#include "ThreadManager.h"
 
 struct AudioContext
 {
@@ -24,6 +24,10 @@ struct AudioContext
     float energy64fScaled;
     uint8_t energy8;
     uint8_t energy8Scaled;
+    float energy64fPeaks;
+    float energy64fPeaksScaled;
+    uint8_t energy8Peaks;
+    uint8_t energy8PeaksScaled;
 };
 
 class Microphone final
@@ -45,74 +49,79 @@ class Microphone final
     static constexpr gpio_num_t MIC_SCK = GPIO_NUM_14;
     static constexpr gpio_num_t MIC_SD = GPIO_NUM_32;
 
-    std::mutex read_mic_mutex_;
+    std::mutex readMicMutex_;
     std::array<int32_t, BUFFER_SIZE> buffer_{};
-    i2s_chan_handle_t rx_chan_{};
+    i2s_chan_handle_t rxChan_{};
 
-    ThreadManager* processing_thread_ = nullptr;
-    std::atomic<bool> thread_initialized_{false};
+    ThreadManager *processingThread_ = nullptr;
+    std::atomic<bool> threadInitialized_{false};
 
-    std::mutex spectrum_mutex_;
-    std::atomic<uint8_t> active_buffer_{0};
-    std::atomic<uint32_t> update_count_{0};
-    std::atomic<uint32_t> processing_time_us_{0};
-    std::atomic<uint32_t> mic_last_update_count_{0};
+    std::mutex spectrumMutex_;
+    std::atomic<uint8_t> activeBuffer_{0};
+    std::atomic<uint32_t> updateCount_{0};
+    std::atomic<uint32_t> processingTimeUs_{0};
+    std::atomic<uint32_t> micLastUpdateCount_{0};
 
     std::array<float, MATRIX_WIDTH> lastSpectrum_{};
     std::array<float, MATRIX_WIDTH> peakLevels_{};
     std::array<float, MATRIX_WIDTH> peakHoldCounters_{};
     std::array<float, MATRIX_WIDTH> bandMaxHistory_{};
-    std::array<float, MATRIX_WIDTH> heights_buffer_[2]{};
-    std::array<float, MATRIX_WIDTH> peaks_buffer_[2]{};
+    std::array<float, MATRIX_WIDTH> heightsBuffer_[2]{};
+    std::array<float, MATRIX_WIDTH> peaksBuffer_[2]{};
     float energy_[2] = {0.0f, 0.0f};
+    float energyPeaks_[2] = {0.0f, 0.0f};
 
-    float dyn_attack_ = 1.0f;
-    float dyn_decay_ = 1.0f;
+    float dynAttack_ = 1.0f;
+    float dynDecay_ = 1.0f;
     uint32_t totalBeats = 0;
 
-    BeatDetector beat_detector_;
-    AudioContext audio_context_{};
+    BeatDetector beatDetector_;
 
-public:
-    const AudioContext& getContext()
+  public:
+    void getContext(AudioContext &audio)
     {
-        std::lock_guard lock(spectrum_mutex_);
+        std::lock_guard lock(spectrumMutex_);
 
-        if (update_count_.load() == mic_last_update_count_.load())
+        if (updateCount_.load() == micLastUpdateCount_.load())
         {
-            audio_context_.isBeat = false;
-            return audio_context_;
+            audio.isBeat = false;
+            return;
         }
 
-        mic_last_update_count_.store(update_count_.load());
+        micLastUpdateCount_.store(updateCount_.load());
 
-        const uint8_t current_buffer = active_buffer_.load();
-        const auto& heights64f = heights_buffer_[current_buffer];
-        const auto& peaks64f = peaks_buffer_[current_buffer];
+        const uint8_t current_buffer = activeBuffer_.load();
+        const auto &heights64f = heightsBuffer_[current_buffer];
+        const auto &peaks64f = peaksBuffer_[current_buffer];
 
         std::array<uint8_t, MATRIX_WIDTH> heights8{};
-        std::ranges::transform(heights64f, heights8.begin(),
-                               [](const float x) -> uint8_t { return 255.0f * x / 63.0f; });
+        std::ranges::transform(
+            heights64f, heights8.begin(), [](const float x) -> uint8_t { return 255.0f * x / 63.0f; });
 
         std::array<uint8_t, MATRIX_WIDTH> peaks8{};
-        std::ranges::transform(peaks64f, peaks8.begin(),
-                               [](const float x) -> uint8_t { return 255.0f * x / 63.0f; });
+        std::ranges::transform(
+            peaks64f, peaks8.begin(), [](const float x) -> uint8_t { return 255.0f * x / 63.0f; });
 
-        beat_detector_.update(heights64f);
-        const bool isBeat = beat_detector_.isBeatDetected();
-        if (isBeat) totalBeats++;
+        beatDetector_.update(heights64f);
+        const bool isBeat = beatDetector_.isBeatDetected();
+        if (isBeat)
+            totalBeats++;
 
-        audio_context_.heights8 = heights8;
-        audio_context_.peaks8 = peaks8;
-        audio_context_.bpm = static_cast<uint16_t>(beat_detector_.getBPM());
-        audio_context_.isBeat = isBeat;
-        audio_context_.totalBeats = totalBeats;
-        audio_context_.energy64f = energy_[current_buffer];
-        audio_context_.energy64fScaled = min(63.0f, 1.5f * energy_[current_buffer]);
-        audio_context_.energy8 = 255.0f * energy_[current_buffer] / 63.0f;
-        audio_context_.energy8Scaled = min(255.0f, 1.5f * 255.0f * energy_[current_buffer] / 63.0f);
+        audio.heights8 = heights8;
+        audio.peaks8 = peaks8;
+        audio.bpm = static_cast<uint16_t>(beatDetector_.getBPM());
+        audio.isBeat = isBeat;
+        audio.totalBeats = totalBeats;
 
-        return audio_context_;
+        audio.energy64f = energy_[current_buffer];
+        audio.energy64fScaled = min(63.0f, 1.5f * energy_[current_buffer]);
+        audio.energy8 = 255.0f * energy_[current_buffer] / 63.0f;
+        audio.energy8Scaled = min(255.0f, 1.5f * 255.0f * energy_[current_buffer] / 63.0f);
+
+        audio.energy64fPeaks = energyPeaks_[current_buffer];
+        audio.energy64fPeaksScaled = min(63.0f, 1.5f * energyPeaks_[current_buffer]);
+        audio.energy8Peaks = 255.0f * energyPeaks_[current_buffer] / 63.0f;
+        audio.energy8PeaksScaled = min(255.0f, 1.5f * 255.0f * energyPeaks_[current_buffer] / 63.0f);
     }
 
     void start()
@@ -120,20 +129,20 @@ public:
         Serial.println("Starting Microphone and FFT processing...");
 
         // Initialize spectrum buffers
-        for (auto& buffer : heights_buffer_)
+        for (auto &buffer : heightsBuffer_)
         {
             buffer.fill(0.0f);
         }
 
-        for (auto& buffer : peaks_buffer_)
+        for (auto &buffer : peaksBuffer_)
         {
             buffer.fill(0.0f);
         }
 
-        active_buffer_.store(0);
-        update_count_.store(0);
-        processing_time_us_.store(0);
-        thread_initialized_.store(false);
+        activeBuffer_.store(0);
+        updateCount_.store(0);
+        processingTimeUs_.store(0);
+        threadInitialized_.store(false);
 
         constexpr i2s_chan_config_t chan_cfg = {
             .id = I2S_NUM_0,
@@ -146,7 +155,7 @@ public:
             .intr_priority = 0,
         };
 
-        esp_err_t err = i2s_new_channel(&chan_cfg, nullptr, &rx_chan_);
+        esp_err_t err = i2s_new_channel(&chan_cfg, nullptr, &rxChan_);
         if (err != ESP_OK)
         {
             Serial.printf("Failed to create I2S RX channel: %s\n", esp_err_to_name(err));
@@ -156,34 +165,36 @@ public:
         constexpr i2s_std_config_t std_cfg = {
             .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(SAMPLE_RATE),
             .slot_cfg = I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_32BIT, I2S_SLOT_MODE_MONO),
-            .gpio_cfg = {
-                .mclk = I2S_GPIO_UNUSED,
-                .bclk = MIC_SCK,
-                .ws = MIC_WS,
-                .dout = I2S_GPIO_UNUSED,
-                .din = MIC_SD,
-                .invert_flags = {
-                    .mclk_inv = false,
-                    .bclk_inv = false,
-                    .ws_inv = false,
+            .gpio_cfg =
+                {
+                    .mclk = I2S_GPIO_UNUSED,
+                    .bclk = MIC_SCK,
+                    .ws = MIC_WS,
+                    .dout = I2S_GPIO_UNUSED,
+                    .din = MIC_SD,
+                    .invert_flags =
+                        {
+                            .mclk_inv = false,
+                            .bclk_inv = false,
+                            .ws_inv = false,
+                        },
                 },
-            },
         };
 
-        err = i2s_channel_init_std_mode(rx_chan_, &std_cfg);
+        err = i2s_channel_init_std_mode(rxChan_, &std_cfg);
         if (err != ESP_OK)
         {
             Serial.printf("Failed to initialize I2S RX channel in STD mode: %s\n", esp_err_to_name(err));
-            i2s_del_channel(rx_chan_);
+            i2s_del_channel(rxChan_);
             ESP_INFINITE_LOOP();
         }
 
-        err = i2s_channel_enable(rx_chan_);
+        err = i2s_channel_enable(rxChan_);
         if (err != ESP_OK)
         {
             Serial.printf("Failed to enable I2S RX channel: %s\n", esp_err_to_name(err));
-            i2s_channel_disable(rx_chan_);
-            i2s_del_channel(rx_chan_);
+            i2s_channel_disable(rxChan_);
+            i2s_del_channel(rxChan_);
             ESP_INFINITE_LOOP();
         }
 
@@ -191,13 +202,11 @@ public:
         static constexpr size_t FFT_THREAD_STACK_SIZE = 8192;
         static constexpr int FFT_THREAD_PRIORITY = 5; // Lower number = higher priority
 
-        processing_thread_ = new ThreadManager(
-            "MicFFT", FFT_THREAD_CORE,
-            FFT_THREAD_STACK_SIZE,
-            FFT_THREAD_PRIORITY);
+        processingThread_ =
+            new ThreadManager("MicFFT", FFT_THREAD_CORE, FFT_THREAD_STACK_SIZE, FFT_THREAD_PRIORITY);
 
-        processing_thread_->start([this](const std::atomic<bool>& running) { processingThreadFunc(running); });
-        thread_initialized_.store(true);
+        processingThread_->start([this](const std::atomic<bool> &running) { processingThreadFunc(running); });
+        threadInitialized_.store(true);
 
         Serial.println("Microphone and FFT processing running");
     }
@@ -207,46 +216,52 @@ public:
         Serial.println("Destroying Microphone and FFT processing...");
 
         // Stop processing thread first
-        if (thread_initialized_.load())
+        if (threadInitialized_.load())
         {
-            delete processing_thread_;
-            processing_thread_ = nullptr;
-            thread_initialized_.store(false);
+            delete processingThread_;
+            processingThread_ = nullptr;
+            threadInitialized_.store(false);
         }
 
         // Then shutdown the I2S channel
-        if (rx_chan_)
+        if (rxChan_)
         {
-            i2s_channel_disable(rx_chan_);
-            i2s_del_channel(rx_chan_);
+            i2s_channel_disable(rxChan_);
+            i2s_del_channel(rxChan_);
         }
 
         Serial.println("Microphone and FFT processing destroyed");
     }
 
-private:
-    static void fft(std::vector<std::complex<float>>& x)
+  private:
+    static void fft(std::vector<std::complex<float>> &x)
     {
         const size_t N = x.size();
-        if (N == 0) return;
+        if (N == 0)
+            return;
 
         if ((N > 1) && (N & (N - 1)) != 0)
         {
             Serial.printf("FFT size %zu is not a power of 2. Aborting FFT.\n", N);
             return;
         }
-        if (N <= 1) return;
+        if (N <= 1)
+            return;
 
         std::vector<std::complex<float>> scratch(N);
         fft_recursive_impl(x.data(), N, scratch.data());
     }
 
-    static void fft_recursive_impl(std::complex<float>* x_data, const size_t N, std::complex<float>* scratch_data)
+    static void fft_recursive_impl(
+        std::complex<float> *x_data,
+        const size_t N,
+        std::complex<float> *scratch_data)
     {
-        if (N <= 1) return;
+        if (N <= 1)
+            return;
 
-        std::complex<float>* even_part_in_scratch = scratch_data;
-        std::complex<float>* odd_part_in_scratch = scratch_data + N / 2;
+        std::complex<float> *even_part_in_scratch = scratch_data;
+        std::complex<float> *odd_part_in_scratch = scratch_data + N / 2;
 
         for (size_t i = 0; i < N / 2; i++)
         {
@@ -267,7 +282,7 @@ private:
         }
     }
 
-    void processingThreadFunc(const std::atomic<bool>& running)
+    void processingThreadFunc(const std::atomic<bool> &running)
     {
         std::vector<std::complex<float>> fft_input(BUFFER_SIZE);
         std::array<int32_t, BUFFER_SIZE> local_buffer{};
@@ -292,10 +307,13 @@ private:
             // Read microphone data with timeout
             size_t bytes_read = 0;
             {
-                std::lock_guard lock(read_mic_mutex_);
-                const esp_err_t err = i2s_channel_read(rx_chan_, buffer_.data(),
-                                                       BUFFER_SIZE * sizeof(int32_t),
-                                                       &bytes_read, 100 / portTICK_PERIOD_MS); // 100ms timeout
+                std::lock_guard lock(readMicMutex_);
+                const esp_err_t err = i2s_channel_read(
+                    rxChan_,
+                    buffer_.data(),
+                    BUFFER_SIZE * sizeof(int32_t),
+                    &bytes_read,
+                    100 / portTICK_PERIOD_MS); // 100ms timeout
 
                 if (err != ESP_OK)
                 {
@@ -319,11 +337,11 @@ private:
 
             const auto start_time = esp_timer_get_time();
 
-
             // Prepare FFT input with window function
             for (size_t i = 0; i < BUFFER_SIZE; ++i)
             {
-                const float cos_res = cosf(2.0f * M_PI * static_cast<float>(i) / static_cast<float>(BUFFER_SIZE - 1));
+                const float cos_res =
+                    cosf(2.0f * M_PI * static_cast<float>(i) / static_cast<float>(BUFFER_SIZE - 1));
                 const float window_val = 0.5f * (1.0f - cos_res);
                 const float sample_float = static_cast<float>(local_buffer[i] >> 16) / 32768.0f;
                 fft_input[i] = std::complex(sample_float * window_val, 0.0f);
@@ -356,22 +374,23 @@ private:
             }
 
             energy /= (MATRIX_WIDTH - 1);
-            dyn_attack_ = 1.0f + energy * ENERGY_ATTACK_FACTOR;
-            dyn_decay_ = 1.0f - energy * ENERGY_DECAY_FACTOR;
-            dyn_attack_ = std::min(std::max(dyn_attack_, ENERGY_ATTACK_MIN), ENERGY_ATTACK_MAX);
-            dyn_decay_ = std::min(std::max(dyn_decay_, ENERGY_DECAY_MIN), ENERGY_DECAY_MAX);
+            dynAttack_ = 1.0f + energy * ENERGY_ATTACK_FACTOR;
+            dynDecay_ = 1.0f - energy * ENERGY_DECAY_FACTOR;
+            dynAttack_ = std::min(std::max(dynAttack_, ENERGY_ATTACK_MIN), ENERGY_ATTACK_MAX);
+            dynDecay_ = std::min(std::max(dynDecay_, ENERGY_DECAY_MIN), ENERGY_DECAY_MAX);
 
             energy = 0;
+            float energyPeaks = 0;
 
             for (uint8_t x = 0; x < MATRIX_WIDTH; ++x)
             {
                 if (const float currentValue = local_spectrum[x]; currentValue > lastSpectrum_[x])
                 {
-                    lastSpectrum_[x] = lastSpectrum_[x] * (1.0f - dyn_attack_) + currentValue * dyn_attack_;
+                    lastSpectrum_[x] = lastSpectrum_[x] * (1.0f - dynAttack_) + currentValue * dynAttack_;
                 }
                 else
                 {
-                    lastSpectrum_[x] = lastSpectrum_[x] * dyn_decay_ + currentValue * (1.0f - dyn_decay_);
+                    lastSpectrum_[x] = lastSpectrum_[x] * dynDecay_ + currentValue * (1.0f - dynDecay_);
                 }
 
                 if (lastSpectrum_[x] > peakLevels_[x])
@@ -392,28 +411,33 @@ private:
                 }
 
                 local_heights[x] = std::min(lastSpectrum_[x], static_cast<float>(MATRIX_WIDTH));
-                local_peaks[x] = std::min(peakLevels_[x], static_cast<float>(MATRIX_WIDTH - 1));
                 energy += local_heights[x];
+                local_peaks[x] = std::min(peakLevels_[x], static_cast<float>(MATRIX_WIDTH - 1));
+                energyPeaks += local_peaks[x];
             }
 
             energy /= (MATRIX_WIDTH - 1);
+            energyPeaks /= (MATRIX_WIDTH - 1);
 
             // Track processing time
-            processing_time_us_.store(esp_timer_get_time() - start_time);
+            processingTimeUs_.store(esp_timer_get_time() - start_time);
             last_process_time = esp_timer_get_time() / 1000;
 
             // Store results in inactive buffer
-            const uint8_t write_buffer = 1 - active_buffer_.load();
+            const uint8_t write_buffer = 1 - activeBuffer_.load();
             {
-                std::lock_guard lock(spectrum_mutex_);
-                std::memcpy(heights_buffer_[write_buffer].data(), local_heights.data(), sizeof(float) * MATRIX_WIDTH);
-                std::memcpy(peaks_buffer_[write_buffer].data(), local_peaks.data(), sizeof(float) * MATRIX_WIDTH);
+                std::lock_guard lock(spectrumMutex_);
+                std::memcpy(
+                    heightsBuffer_[write_buffer].data(), local_heights.data(), sizeof(float) * MATRIX_WIDTH);
+                std::memcpy(
+                    peaksBuffer_[write_buffer].data(), local_peaks.data(), sizeof(float) * MATRIX_WIDTH);
                 energy_[write_buffer] = energy;
+                energyPeaks_[write_buffer] = energyPeaks;
             }
 
             // Switch active buffer
-            active_buffer_.store(write_buffer);
-            update_count_.fetch_add(1);
+            activeBuffer_.store(write_buffer);
+            updateCount_.fetch_add(1);
 
             // Yield to other tasks
             vTaskDelay(pdMS_TO_TICKS(1));

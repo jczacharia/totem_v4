@@ -5,53 +5,58 @@ class MandalaPattern final : public Pattern
     int16_t dx = 0;
     int16_t dy = 0;
     int16_t dz = 0;
-    int16_t dsx = 0;
-    int16_t dsy = 0;
+    uint8_t kaleidoscopeEffect = 0;
+    CRGBPalette16 palette = randomPalette();
 
-public:
+  public:
     static constexpr auto ID = "Mandala";
 
-    MandalaPattern() : Pattern(ID)
+    explicit MandalaPattern()
+        : Pattern(ID)
     {
     }
 
-    void start(PatternContext& ctx) override
+    void start() override
     {
-        ctx.noise.randomize();
-        dx = random8();
+        noise.randomize();
         dy = random16(2000) - 1000;
-        dz = random8();
-        dsx = random8();
-        dsy = random8();
+        dx = random16(500) - 250;
+        dz = random16(500) - 250;
+        palette = randomPalette();
+        kaleidoscopeEffect = random8(1, MatrixLeds::KALEIDOSCOPE_COUNT + 1);
     }
 
-    void render(PatternContext& ctx) override
+    void render() override
     {
-        if (ctx.audio.isBeat)
+        if (audio.isBeat)
         {
-            dy = random16(2000) - 1000;
-            dx = random16(500) - 250;
-            dz = random16(500) - 250;
-            ctx.noise.noise_scale_x = random16(10000) + 2000;
-            ctx.noise.noise_scale_y = random16(10000) + 2000;
+            if (audio.totalBeats % 4 == 0)
+            {
+                dy = random16(2000) - 1000;
+                dx = random16(500) - 250;
+                dz = random16(500) - 250;
+                noise.noiseScaleX = random16(10000) + 2000;
+                noise.noiseScaleY = random16(10000) + 2000;
+            }
         }
 
-        ctx.noise.noise_y += dy;
-        ctx.noise.noise_x += dx;
-        ctx.noise.noise_z += dz;
+        noise.noiseY += dy;
+        noise.noiseX += dx;
+        noise.noiseZ += dz;
 
-        ctx.noise.fill();
+        noise.fill();
 
         for (uint8_t i = 0; i < MATRIX_WIDTH; i++)
         {
             for (uint8_t j = 0; j < MATRIX_HEIGHT; j++)
             {
-                const uint8_t color = ctx.noise(i, j);
-                ctx.leds(i, j) = ColorFromPalette(ctx.targetPalette, color, 150);
+                const uint8_t color = noise(i, j);
+                bkgLeds(i, j) = ColorFromPalette(palette, color, 255);
             }
         }
 
-        ctx.kaleidoscope3();
-        ctx.kaleidoscope1();
+        bkgLeds.randomKaleidoscope(kaleidoscopeEffect);
+        bkgLeds.kaleidoscope1();
+        bkgLeds.dim(35);
     }
 };

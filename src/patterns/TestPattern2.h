@@ -10,18 +10,19 @@ class TestPattern2 final : public Pattern
     uint8_t r = 0;
     uint32_t ms = 0;
 
-public:
+  public:
     static constexpr auto ID = "Test2";
 
-    explicit TestPattern2() : Pattern(ID)
+    explicit TestPattern2(MatrixLeds &leds, MatrixNoise &noise, AudioContext &audio)
+        : Pattern(ID, leds, noise, audio)
     {
     }
 
-    void start(PatternContext& ctx) override
+    void start() override
     {
     }
 
-    void render(PatternContext& ctx) override
+    void render() override
     {
         if (millis() - ms > 5000)
         {
@@ -30,7 +31,7 @@ public:
             Serial.printf("x: %d\n", x);
         }
 
-        if (ctx.audio.totalBeats % 4 == 0)
+        if (audio.totalBeats % 4 == 0)
         {
             x = random8(0, MATRIX_WIDTH);
             y = random8(0, MATRIX_HEIGHT);
@@ -39,14 +40,17 @@ public:
 
         for (int8_t i = MATRIX_CENTER_X - 1; i >= 0; --i)
         {
-            ctx.fillCircle<CRGB>(MATRIX_CENTER_X,MATRIX_CENTER_Y, i,
-                                 ColorFromPalette(RainbowColors_p, 255 * i / (MATRIX_CENTER_X - 1), 255));
+            fillCircle<CRGB>(
+                MATRIX_CENTER_X,
+                MATRIX_CENTER_Y,
+                i,
+                ColorFromPalette(RainbowColors_p, 255 * i / (MATRIX_CENTER_X - 1), 255));
         }
 
         // switch (e)
         // {
         // case 0:
-            ctx.spiralStream(x, y, r, 255);
+        spiralStream(x, y, r, 255);
         //     break;
         // default:
         //     break;

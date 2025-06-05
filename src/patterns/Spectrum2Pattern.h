@@ -5,48 +5,47 @@ class Spectrum2Pattern final : public Pattern
     uint8_t x1 = 0, y1 = 0, x2 = 0, y2 = 0;
     bool mirror = false;
     uint8_t mirrorDim = 0;
-    uint8_t dimAmount = 0;
     bool useCurrentPalette = false;
     uint8_t colorSpread = 0;
     uint8_t kaleidoscopeEffect = 0;
+    CRGBPalette16 palette = randomPalette();
 
-public:
+    void randomize()
+    {
+        mirror = random(0, 2);
+        mirrorDim = 255;
+        useCurrentPalette = true;
+        colorSpread = 7;
+        kaleidoscopeEffect = random8(1, KALEIDOSCOPE_COUNT + 1);
+    }
+
+  public:
     static constexpr auto ID = "Spectrum2";
 
-    Spectrum2Pattern() : Pattern(ID)
+    explicit Spectrum2Pattern(MatrixLeds &leds, MatrixNoise &noise, AudioContext &audio)
+        : Pattern(ID, leds, noise, audio)
     {
     }
 
-    // #############
-    // ### START ###
-    // #############
-    void start(PatternContext& ctx) override
+    void start() override
     {
-        mirror = true;
-        mirrorDim = 255;
-        dimAmount = random(0, 10);
-        useCurrentPalette = true;
-        colorSpread = 7;
-        kaleidoscopeEffect = random(0, 2);
+        randomize();
+        palette = randomPalette();
     };
 
-    // ##################
-    // ### DRAW FRAME ###
-    // ##################
-    void render(PatternContext& ctx) override
+    void render() override
     {
-        if (ctx.audio.isBeat)
+        if (audio.isBeat)
         {
-            start(ctx);
+            if (audio.totalBeats % 4 == 0)
+            {
+                randomize();
+            }
         }
 
-        // always apply small dim
-        ctx.leds.dim(250 - (dimAmount * 10));
-
-        // centered spectrum analyzer
         for (uint i = 0; i < MATRIX_WIDTH / 2; i++)
         {
-            const uint8_t data = ctx.audio.heights8[2 * i] >> 2;
+            const uint8_t data = audio.heights8[2 * i] >> 2;
             x1 = i;
             x2 = i;
             y1 = MATRIX_HEIGHT - 1;
@@ -60,34 +59,42 @@ public:
             {
                 if (useCurrentPalette)
                 {
-                    ctx.drawLine(x1, y1, x2, y2,
-                                 ColorFromPalette(ctx.currentPalette, i * colorSpread, ctx.audio.energy8Scaled));
+                    drawLine(x1, y1, x2, y2, ColorFromPalette(palette, i * colorSpread, audio.energy8Scaled));
                     if (mirror)
                     {
-                        ctx.drawLine(MATRIX_WIDTH - x1 - 1, y1, MATRIX_WIDTH - x2 - 1, y2,
-                                     ColorFromPalette(ctx.currentPalette, i * colorSpread, mirrorDim));
+                        drawLine(
+                            MATRIX_WIDTH - x1 - 1,
+                            y1,
+                            MATRIX_WIDTH - x2 - 1,
+                            y2,
+                            ColorFromPalette(palette, i * colorSpread, mirrorDim));
                     }
                 }
                 else
                 {
-                    ctx.drawLine(x1, y1, x2, y2,
-                                 ColorFromPalette(ctx.currentPalette, 16, ctx.audio.energy8Scaled));
+                    drawLine(x1, y1, x2, y2, ColorFromPalette(palette, 16, audio.energy8Scaled));
                     if (mirror)
                     {
-                        ctx.drawLine(MATRIX_WIDTH - x1 - 1, y1, MATRIX_WIDTH - x2 - 1, y2,
-                                     ColorFromPalette(ctx.currentPalette, 16, mirrorDim));
+                        drawLine(
+                            MATRIX_WIDTH - x1 - 1,
+                            y1,
+                            MATRIX_WIDTH - x2 - 1,
+                            y2,
+                            ColorFromPalette(palette, 16, mirrorDim));
                     }
                 }
             }
         }
 
-        switch (kaleidoscopeEffect)
+        if (audio.totalBeats % 3 == 0)
         {
-        case 0:
-            ctx.kaleidoscope1();
-            break;
-        default:
-            break;
+            randomKaleidoscope(kaleidoscopeEffect);
+            kaleidoscope2();
+        }
+        else
+        {
+            kaleidoscope1();
+            kaleidoscope2();
         }
     }
 };

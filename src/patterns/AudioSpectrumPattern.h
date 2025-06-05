@@ -6,44 +6,43 @@
 
 class AudioSpectrumPattern final : public Pattern
 {
-    uint8_t animationPhase_ = 0;
+    uint32_t ms_ = 0;
+    uint8_t animationPhase = 0;
     bool animationDirectionForward_ = true;
-    uint32_t ms = 0;
-    bool usePalette = false;
 
-public:
+  public:
     static constexpr auto ID = "AudioSpectrum";
 
-    AudioSpectrumPattern() : Pattern(ID)
+    explicit AudioSpectrumPattern()
+        : Pattern(ID)
     {
     }
 
-    void start(PatternContext& ctx) override
+    void start() override
     {
-        animationPhase_ = random(0, 256);
-        usePalette = random8(2);
+        animationPhase = random8();
     }
 
-    void render(PatternContext& ctx) override
+    void render() override
     {
-        if (millis() - ms > 1000)
+        if (millis() - ms_ > 50)
         {
-            ms = millis();
+            ms_ = millis();
             if (animationDirectionForward_)
             {
-                animationPhase_++;
-                if (animationPhase_ >= 255)
+                animationPhase++;
+                if (animationPhase >= 255)
                 {
-                    animationPhase_ = 255;
+                    animationPhase = 255;
                     animationDirectionForward_ = false;
                 }
             }
             else
             {
-                animationPhase_--;
-                if (animationPhase_ <= 0)
+                animationPhase--;
+                if (animationPhase <= 0)
                 {
-                    animationPhase_ = 0;
+                    animationPhase = 0;
                     animationDirectionForward_ = true;
                 }
             }
@@ -51,29 +50,20 @@ public:
 
         for (uint8_t x = 0; x < MATRIX_WIDTH; ++x)
         {
-            const uint8_t height = MATRIX_HEIGHT * ctx.audio.heights8[x] / 255;
-            const uint8_t peakHeight = MATRIX_HEIGHT * ctx.audio.peaks8[x] / 255;
+            const uint8_t height = MATRIX_HEIGHT * audio.heights8[x] / 255;
+            const uint8_t peakHeight = MATRIX_HEIGHT * audio.peaks8[x] / 255;
 
             for (uint8_t y = 0; y < height; ++y)
             {
-                if (usePalette)
-                {
-                    const uint8_t norm = 255 * y / (MATRIX_HEIGHT - 1);
-                    ctx.drawPixel(x, MATRIX_HEIGHT - 1 - y,
-                                  ColorFromPalette(ctx.currentPalette, 255 - norm, 255));
-                }
-                else
-                {
-                    const uint8_t norm = 255 * y / (MATRIX_HEIGHT - 1);
-                    const uint8_t bottom_hue = lerp8by8(HUE_GREEN, HUE_PINK, animationPhase_);
-                    const uint8_t hue = lerp8by8(bottom_hue, HUE_RED, norm);
-                    ctx.drawPixel(x, MATRIX_HEIGHT - 1 - y, CHSV(hue, 255, 255));
-                }
+                const uint8_t norm = 255 * y / (MATRIX_HEIGHT - 1);
+                const uint8_t bottom_hue = lerp8by8(HUE_GREEN, HUE_PINK, animationPhase);
+                const uint8_t hue = lerp8by8(bottom_hue, HUE_RED, norm);
+                leds.drawPixel(x, MATRIX_HEIGHT - 1 - y, CHSV(hue, 255, 255));
             }
 
             if (peakHeight > 0)
             {
-                ctx.drawPixel(x, MATRIX_HEIGHT - 1 - peakHeight, CRGB(255, 255, 255));
+                leds.drawPixel(x, MATRIX_HEIGHT - 1 - peakHeight, CRGB(255, 255, 255));
             }
         }
     }

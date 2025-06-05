@@ -1,10 +1,10 @@
 ﻿#pragma once
 
-#include <thread>
+#include "esp_pthread.h"
 #include <atomic>
 #include <functional>
 #include <string>
-#include "esp_pthread.h"
+#include <thread>
 
 class ThreadManager
 {
@@ -17,9 +17,12 @@ class ThreadManager
     size_t stack_size_;
     size_t priority_;
 
-public:
+  public:
     ThreadManager(std::string name, const int core, const size_t stack_size, const size_t priority)
-        : name_(std::move(name)), core_(core), stack_size_(stack_size), priority_(priority)
+        : name_(std::move(name))
+        , core_(core)
+        , stack_size_(stack_size)
+        , priority_(priority)
     {
     }
 
@@ -28,7 +31,7 @@ public:
         stop();
     }
 
-    void start(std::function<void(std::atomic<bool>&)> thread_func)
+    void start(std::function<void(std::atomic<bool> &)> thread_func)
     {
         Serial.printf("Starting thread: %s\n", name_.c_str());
         auto cfg = esp_pthread_get_default_config();

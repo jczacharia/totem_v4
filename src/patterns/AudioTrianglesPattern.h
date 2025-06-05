@@ -2,86 +2,92 @@
 
 class AudioTrianglesPattern final : public Pattern
 {
-    bool cycleColors = false;
     uint8_t color1 = 0;
-    uint8_t color2 = 64;
-    uint8_t color3 = 128;
-    uint8_t color4 = 192;
-    uint8_t kaleidoscopeMode = 0;
+    uint8_t color2 = 0;
+    uint8_t color3 = 0;
+    uint8_t color4 = 0;
+    uint8_t color5 = 0;
+    uint8_t color6 = 0;
 
-public:
+    uint8_t kaleidoscopeMode = 0;
+    CRGBPalette16 palette = randomPalette();
+
+    void randomize()
+    {
+        color1 = random8();
+        color2 = random8();
+        color3 = random8();
+        color4 = random8();
+        color5 = random8();
+        color6 = random8();
+        kaleidoscopeMode = random8(0, 4);
+    }
+
+  public:
     static constexpr auto ID = "AudioTriangles";
 
-    AudioTrianglesPattern(): Pattern(ID)
+    explicit AudioTrianglesPattern()
+        : Pattern(ID)
     {
     }
 
-    void start(PatternContext& ctx) override
+    void start() override
     {
-        cycleColors = true;
-        kaleidoscopeMode = random8(0, 3);
+        randomize();
+        palette = randomPalette();
     };
 
-    void render(PatternContext& ctx) override
+    void render() override
     {
-        if (ctx.audio.isBeat)
+        if (audio.isBeat)
         {
-            start(ctx);
+            randomize();
         }
 
-        if (cycleColors)
-        {
-            color1++;
-            color2++;
-            color3++;
-            color4++;
-        }
-        else
-        {
-            color1 = 0;
-            color2 = 64;
-            color3 = 128;
-            color4 = 192;
-        }
+        color1++;
+        color2++;
+        color3++;
+        color4++;
+        color5++;
+        color6++;
 
-        uint8_t x1 = ctx.audio.heights8[10] >> 3;
-        uint8_t y1 = ctx.audio.heights8[20] >> 3;
-        uint8_t x2 = ctx.audio.heights8[30] >> 3;
-        uint8_t y2 = ctx.audio.heights8[40] >> 3;
-        uint8_t x3 = ctx.audio.heights8[50] >> 3;
-        uint8_t y3 = ctx.audio.heights8[60] >> 3;
+        uint8_t x1 = audio.heights8[10] >> 3;
+        uint8_t y1 = audio.heights8[20] >> 3;
+        uint8_t x2 = audio.heights8[30] >> 3;
+        uint8_t y2 = audio.heights8[40] >> 3;
+        uint8_t x3 = audio.heights8[50] >> 3;
+        uint8_t y3 = audio.heights8[60] >> 3;
 
-        ctx.drawLine(x1, y1, x2, y2, ColorFromPalette(ctx.currentPalette, color1, 200));
-        ctx.drawLine(x2, y2, x3, y3, ColorFromPalette(ctx.currentPalette, color2, 200)); // green
-        ctx.drawLine(x3, y3, x1, y1, ColorFromPalette(ctx.currentPalette, color3, 200)); // green
+        leds.drawLine(x1, y1, x2, y2, ColorFromPalette(palette, color1));
+        leds.drawLine(x2, y2, x3, y3, ColorFromPalette(palette, color2));
+        leds.drawLine(x3, y3, x1, y1, ColorFromPalette(palette, color3));
 
-        x1 = ctx.audio.heights8[13] >> 3;
-        y1 = ctx.audio.heights8[23] >> 3;
-        x2 = ctx.audio.heights8[33] >> 3;
-        y2 = ctx.audio.heights8[43] >> 3;
-        x3 = ctx.audio.heights8[53] >> 3;
-        y3 = ctx.audio.heights8[63] >> 3;
+        x1 = audio.heights8[13] >> 3;
+        y1 = audio.heights8[23] >> 3;
+        x2 = audio.heights8[33] >> 3;
+        y2 = audio.heights8[43] >> 3;
+        x3 = audio.heights8[53] >> 3;
+        y3 = audio.heights8[63] >> 3;
 
-        ctx.drawLine(x1, y1, x2, y2, ColorFromPalette(ctx.currentPalette, color2, 200));
-        ctx.drawLine(x2, y2, x3, y3, ColorFromPalette(ctx.currentPalette, color3, 200)); // green
-        ctx.drawLine(x3, y3, x1, y1, ColorFromPalette(ctx.currentPalette, color4, 200)); // green
+        leds.drawLine(x1, y1, x2, y2, ColorFromPalette(palette, color4));
+        leds.drawLine(x2, y2, x3, y3, ColorFromPalette(palette, color5));
+        leds.drawLine(x3, y3, x1, y1, ColorFromPalette(palette, color6));
 
         switch (kaleidoscopeMode)
         {
-        case 0:
-            ctx.kaleidoscope3();
-            ctx.kaleidoscope1();
-            break;
-        case 1:
-            ctx.kaleidoscope4();
-            ctx.kaleidoscope1();
-            break;
-        case 2:
-            ctx.kaleidoscope1();
-            break;
-        default:
-            ctx.kaleidoscope2();
-            break;
+            case 0:
+                leds.kaleidoscope3();
+                leds.kaleidoscope1();
+                break;
+            case 1:
+                leds.kaleidoscope4();
+                leds.kaleidoscope1();
+                break;
+            case 2: leds.kaleidoscope2(); break;
+            default:
+                leds.randomKaleidoscope(random8(1, MatrixLeds::KALEIDOSCOPE_COUNT + 1));
+                leds.kaleidoscope2();
+                break;
         }
     }
 };

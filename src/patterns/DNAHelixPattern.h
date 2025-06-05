@@ -1,162 +1,103 @@
 ﻿#pragma once
 
 #include <array>
-#include <vector>
 
 #include "Matrix.h"
 
 class DNAHelixPattern final : public Pattern
 {
-    struct Nucleotide
-    {
-        float x;
-        float y;
-        uint8_t type; // 0-3 for A,T,G,C
-        uint8_t brightness;
-    };
-
-    // Pattern parameters
     float helixRotation = 0.0f;
-    float helixPhase = 0.0f;
     float helixRadius = MATRIX_WIDTH / 3.0f;
     float helixHeight = MATRIX_HEIGHT / 20.0f;
     uint8_t baseHue = 0;
     uint32_t lastBeatTime = 0;
-    uint8_t kaleidoscopeEffect;
-
-    // Mutation effect
-    std::vector<std::pair<uint8_t, uint32_t>> mutations; // position, time
-
-    // Wave parameters for organic movement
+    uint8_t kaleidoscopeEffect = 0;
     float waveOffset = 0.0f;
     float waveAmplitude = 0.0f;
+    CRGBPalette16 palette = randomPalette();
 
-    void drawBasePair(float y, float phase, float energy, bool isMutating, PatternContext& ctx)
+    void drawBasePair(const float y, const float phase, const float energy, const uint8_t energy8)
     {
-        // Calculate x positions for the two strands
         const float angle1 = phase;
         const float angle2 = phase + PI;
-
-        // Add wave distortion based on audio
         const float waveDistort = sinf(y * 0.3f + waveOffset) * waveAmplitude;
-
         const float x1 = MATRIX_CENTER_X + (helixRadius + waveDistort) * cos(angle1);
         const float x2 = MATRIX_CENTER_X + (helixRadius + waveDistort) * cos(angle2);
-
-        ctx.fillCircle<CRGB>(x1, y, 1, ColorFromPalette(ctx.currentPalette, baseHue, energy));
-        ctx.fillCircle<CRGB>(x2, y, 1, ColorFromPalette(ctx.currentPalette, baseHue + 85, energy));
-        ctx.drawLine<CRGB>(x1, y, x2, y, CHSV(baseHue + 170, 255, ctx.audio.energy8));
+        fillCircle<CRGB>(x1, y, 1, ColorFromPalette(palette, baseHue, energy));
+        fillCircle<CRGB>(x2, y, 1, ColorFromPalette(palette, baseHue + 85, energy));
+        drawLine<CRGB>(x1, y, x2, y, CHSV(baseHue + 170, 255, energy8));
     }
 
-    void drawBackboneConnection(float y1, float phase1, float y2, float phase2, uint8_t side, PatternContext& ctx)
+    void drawBackboneConnection(
+        const float y1,
+        const float phase1,
+        const float y2,
+        const float phase2,
+        const uint8_t side)
     {
         const float angle1 = (side == 0) ? phase1 : phase1 + PI;
         const float angle2 = (side == 0) ? phase2 : phase2 + PI;
-
         const float wave1 = sinf(y1 * 0.3f + waveOffset) * waveAmplitude;
         const float wave2 = sinf(y2 * 0.3f + waveOffset) * waveAmplitude;
-
         const float x1 = MATRIX_CENTER_X + (helixRadius + wave1) * cos(angle1);
         const float x2 = MATRIX_CENTER_X + (helixRadius + wave2) * cos(angle2);
-
-        if (x1 >= 0 && x1 < MATRIX_WIDTH && x2 >= 0 && x2 < MATRIX_WIDTH)
-        {
-            const CRGB backboneColor = CHSV(baseHue + 64, 150, 100);
-            ctx.drawLine<CRGB>(x1, y1, x2, y2, backboneColor);
-        }
+        drawLine<CRGB>(x1, y1, x2, y2, CHSV(baseHue + 64, 150, 100));
     }
 
-public:
+  public:
     static constexpr auto ID = "DNAHelix";
 
-    DNAHelixPattern() : Pattern(ID)
+    explicit DNAHelixPattern(MatrixLeds &leds, MatrixNoise &noise, AudioContext &audio)
+        : Pattern(ID, leds, noise, audio)
     {
     }
 
-    void start(PatternContext& ctx) override
+    void start() override
     {
         helixRotation = random8() / 255.0f * TWO_PI;
-        helixPhase = 0.0f;
-        baseHue = random8();
         helixRadius = MATRIX_WIDTH / (2.5f + random8(0, 20) / 20.0f);
         helixHeight = MATRIX_HEIGHT / (15.0f + random8(0, 10) / 10.0f);
-        mutations.clear();
         waveOffset = 0.0f;
         waveAmplitude = 0.0f;
-        kaleidoscopeEffect = random8(1, ctx.KALEIDOSCOPE_COUNT + 1);
+        kaleidoscopeEffect = random8(1, KALEIDOSCOPE_COUNT + 1);
+        palette = randomPalette();
     }
 
-    void render(PatternContext& ctx) override
+    void render() override
     {
-        // Update rotation based on BPM
-        const float rotationSpeed = ctx.audio.bpm / 60.0f * 0.05f;
-        helixRotation += rotationSpeed;
-
-        // Update wave parameters based on audio energy
-        waveOffset += ctx.audio.energy8 * 0.007f;
-        waveAmplitude = ctx.audio.energy8 * 0.07f;
-
-        // Add mutations on beats
-        if (ctx.audio.isBeat && millis() - lastBeatTime > 100)
+        if (audio.isBeat)
         {
-            lastBeatTime = millis();
-            const uint8_t mutationY = random8(0, MATRIX_HEIGHT);
-            mutations.push_back({mutationY, millis()});
-
-            // Limit mutations
-            if (mutations.size() > 5)
-            {
-                mutations.erase(mutations.begin());
-            }
+            kaleidoscopeEffect = random8(1, KALEIDOSCOPE_COUNT + 1);
         }
 
-        // Remove old mutations
-        std::erase_if(mutations, [](const auto& m) { return millis() - m.second > 1000; });
-
+        helixRotation += audio.bpm / 60.0f * 0.05f;
+        waveOffset += audio.energy8Peaks * 0.005f;
+        waveAmplitude = audio.energy8Peaks * 0.05f;
         baseHue++;
 
-        if (ctx.audio.isBeat)
-        {
-            kaleidoscopeEffect = random8(1, ctx.KALEIDOSCOPE_COUNT + 1);
-        }
-
-        // Draw the DNA helix
         for (uint8_t y = 0; y < MATRIX_HEIGHT; y++)
         {
             const float normalizedY = static_cast<float>(y) / MATRIX_HEIGHT;
-            const float phase = helixRotation + normalizedY * TWO_PI * 2; // 2 full rotations
-
-            // Check if this position is mutating
-            bool isMutating = false;
-            for (const auto& [mutY, mutTime] : mutations)
-            {
-                if (abs(static_cast<int>(y) - static_cast<int>(mutY)) < 3)
-                {
-                    isMutating = true;
-                    break;
-                }
-            }
-
-            // Use frequency data to modulate the helix
+            const float phase = helixRotation + normalizedY * TWO_PI * 2;
             const uint8_t freqBand = y * 64 / MATRIX_HEIGHT;
-            const uint8_t freqEnergy = ctx.audio.heights8[freqBand];
-
-            // Draw base pair
-            drawBasePair(y, phase, freqEnergy, isMutating, ctx);
-
-            // Draw backbone connections
-            if (y > 0)
-            {
-                const float prevPhase = helixRotation + ((y - 1) / static_cast<float>(MATRIX_HEIGHT)) * TWO_PI * 2;
-                drawBackboneConnection(y - 1, prevPhase, y, phase, 0, ctx); // Left strand
-                drawBackboneConnection(y - 1, prevPhase, y, phase, 1, ctx); // Right strand
-            }
+            const uint8_t freqEnergy = audio.peaks8[freqBand];
+            drawBasePair(y, phase, freqEnergy, audio.energy8Peaks);
+            const float prevPhase = helixRotation + ((y - 1) / static_cast<float>(MATRIX_HEIGHT)) * TWO_PI * 2;
+            drawBackboneConnection(y - 1, prevPhase, y, phase, 0);
+            drawBackboneConnection(y - 1, prevPhase, y, phase, 1);
         }
 
-        if (ctx.audio.totalBeats % 4 == 0)
+        if (audio.totalBeats % 4 == 0)
         {
-            ctx.randomKaleidoscope(kaleidoscopeEffect);
-            ctx.kaleidoscope2();
+            randomKaleidoscope(kaleidoscopeEffect);
+            if (audio.totalBeats % 2 == 0)
+            {
+                kaleidoscope2();
+            }
+            else
+            {
+                kaleidoscope1();
+            }
         }
     }
 };

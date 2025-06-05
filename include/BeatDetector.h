@@ -7,8 +7,8 @@ class BeatDetector
 {
     // Constants for beat detection
     static constexpr size_t HISTORY_SIZE = 64;
-    static constexpr float SENSITIVITY = 1.2f; // Lowered from 1.5 to be more sensitive
-    static constexpr uint32_t MIN_INTERVAL_MS = 300; // Increased minimum time between beats
+    static constexpr float SENSITIVITY = 1.2f;        // Lowered from 1.5 to be more sensitive
+    static constexpr uint32_t MIN_INTERVAL_MS = 300;  // Increased minimum time between beats
     static constexpr uint32_t MAX_INTERVAL_MS = 2000; // Maximum time between beats (30 BPM)
 
     // Energy and beat tracking
@@ -33,7 +33,7 @@ class BeatDetector
     uint32_t total_beats_ = 0;
     uint32_t start_time_ = 0;
 
-public:
+  public:
     BeatDetector()
     {
         energy_history_.fill(0);
@@ -42,7 +42,7 @@ public:
     }
 
     // Called regularly with new spectrum data
-    void update(const std::array<float, MATRIX_WIDTH>& spectrum)
+    void update(const std::array<float, MATRIX_WIDTH> &spectrum)
     {
         // Reset beat detection flag at the start of each update
         beat_detected_ = false;
@@ -62,7 +62,7 @@ public:
 
         // Calculate local average and standard deviation
         float avg_energy = 0;
-        for (const auto& e : energy_history_)
+        for (const auto &e : energy_history_)
         {
             avg_energy += e;
         }
@@ -70,7 +70,7 @@ public:
 
         // Calculate standard deviation
         float variance = 0;
-        for (const auto& e : energy_history_)
+        for (const auto &e : energy_history_)
         {
             const float diff = e - avg_energy;
             variance += diff * diff;
@@ -88,8 +88,7 @@ public:
         current_beat_energy_ = current_energy / (threshold + 0.001f); // Normalized energy level
 
         // Check if current energy exceeds threshold and enough time has passed since last beat
-        if (current_energy > threshold &&
-            (current_time - last_beat_time_ > MIN_INTERVAL_MS) &&
+        if (current_energy > threshold && (current_time - last_beat_time_ > MIN_INTERVAL_MS) &&
             current_energy > 0.1)
         {
             // Small minimum threshold to avoid noise
@@ -133,7 +132,11 @@ public:
     // Get the time since the last beat in milliseconds
     [[nodiscard]] uint32_t getTimeSinceLastBeat() const
     {
-        if (last_beat_time_ == 0) return 0;
+        if (last_beat_time_ == 0)
+        {
+            return 0;
+        }
+
         return (esp_timer_get_time() / 1000) - last_beat_time_;
     }
 
@@ -148,21 +151,25 @@ public:
     {
         // Simple confidence measure based on number of intervals collected
         float confidence = 0;
-        for (const auto& interval : beat_intervals_)
+        for (const auto &interval : beat_intervals_)
         {
-            if (interval > 0) confidence += 1.0f;
+            if (interval > 0)
+            {
+                confidence += 1.0f;
+            }
         }
+
         return (confidence / beat_intervals_.size()) * 100.0f;
     }
 
-private:
+  private:
     void calculateBPM()
     {
         // Copy valid intervals to a temporary array
         std::array<uint32_t, 12> valid_intervals{};
         size_t valid_count = 0;
 
-        for (const auto& interval : beat_intervals_)
+        for (const auto &interval : beat_intervals_)
         {
             if (interval > 0 && interval < MAX_INTERVAL_MS)
             {
@@ -170,7 +177,8 @@ private:
             }
         }
 
-        if (valid_count < 3) return; // Need at least 3 intervals for reliable BPM
+        if (valid_count < 3)
+            return; // Need at least 3 intervals for reliable BPM
 
         // Sort intervals for median calculation
         for (size_t i = 0; i < valid_count - 1; i++)
@@ -212,8 +220,14 @@ private:
         if (current_bpm_ > 0)
         {
             // Adjust for tempo octave errors
-            while (current_bpm_ < 60) current_bpm_ *= 2;
-            while (current_bpm_ > 180) current_bpm_ /= 2;
+            while (current_bpm_ < 60)
+            {
+                current_bpm_ *= 2;
+            }
+            while (current_bpm_ > 180)
+            {
+                current_bpm_ /= 2;
+            }
         }
     }
 };
