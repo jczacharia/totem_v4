@@ -1,5 +1,6 @@
 ﻿#pragma once
-#include <Geometry.h>
+
+#include "Geometry.h"
 
 class AudioCubesPattern final : public Pattern
 {
@@ -130,10 +131,10 @@ class AudioCubesPattern final : public Pattern
     std::vector<CubeObject> cube;
 
   public:
-    static constexpr auto ID = "AudioCubes";
+    static constexpr auto ID = "Cubes";
 
-    explicit AudioCubesPattern(MatrixLeds &leds, MatrixNoise &noise, AudioContext &audio)
-        : Pattern(ID, leds, noise, audio)
+    explicit AudioCubesPattern()
+        : Pattern(ID)
     {
     }
 
@@ -157,12 +158,12 @@ class AudioCubesPattern final : public Pattern
     {
         for (int c = 0; c < cubeCount; c++)
         {
-            if (audio.isBeat)
+            if (Audio.isBeat)
             {
-                cube[c].hue += audio.energy8Scaled >> 4;
+                cube[c].hue += Audio.energy8Scaled >> 4;
             }
 
-            cube[c].zCamera = 255.0f - (audio.peaks8[cube[c].bin] >> 1);
+            cube[c].zCamera = 255.0f - (Audio.peaks8[cube[c].bin] >> 1);
             cube[c].AngxSpeed = beatsin8(3, 1, 10) / 100.0f;
             cube[c].AngySpeed = beatcos8(5, 1, 10) / 100.0f;
             cube[c].Angx += cube[c].AngxSpeed;
@@ -183,7 +184,7 @@ class AudioCubesPattern final : public Pattern
                 e = cube[c].edge + i;
                 if (!e->visible)
                 {
-                    drawLine(
+                    Gfx.drawLine(
                         cube[c].screen[e->x].x,
                         cube[c].screen[e->x].y,
                         cube[c].screen[e->y].x,
@@ -197,7 +198,7 @@ class AudioCubesPattern final : public Pattern
                 e = cube[c].edge + i;
                 if (e->visible)
                 {
-                    drawLine(
+                    Gfx.drawLine(
                         cube[c].screen[e->x].x,
                         cube[c].screen[e->x].y,
                         cube[c].screen[e->y].x,

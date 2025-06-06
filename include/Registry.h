@@ -50,6 +50,16 @@ class Registry
     {
         return getInstance().instances_.contains(id);
     }
+
+    static std::vector<std::string> getAllIds()
+    {
+        std::vector<std::string> ids;
+        for (const auto &key : getInstance().instances_ | std::views::keys)
+        {
+            ids.push_back(key);
+        }
+        return ids;
+    }
 };
 
 Registry *Registry::instance_;

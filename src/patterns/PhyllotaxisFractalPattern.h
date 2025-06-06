@@ -1,7 +1,6 @@
 ﻿#pragma once
 
 #include "Geometry.h"
-#include "Matrix.h"
 #include <cmath>
 
 class PhyllotaxisFractalPattern final : public Pattern
@@ -21,10 +20,10 @@ class PhyllotaxisFractalPattern final : public Pattern
     uint8_t morphDurationFrames = 0;
 
   public:
-    static constexpr auto ID = "PhyllotaxisFractal";
+    static constexpr auto ID = "Phyllotaxis Fractal";
 
-    explicit PhyllotaxisFractalPattern(MatrixLeds &leds, MatrixNoise &noise, AudioContext &audio)
-        : Pattern(ID, leds, noise, audio)
+    explicit PhyllotaxisFractalPattern()
+        : Pattern(ID)
     {
     }
 
@@ -74,9 +73,9 @@ class PhyllotaxisFractalPattern final : public Pattern
 
     void render() override
     {
-        if (audio.isBeat)
+        if (Audio.isBeat)
         {
-            if (audio.totalBeats % 4 == 0)
+            if (Audio.totalBeats % 4 == 0)
             {
                 randomizeTargetParameters();
                 beatFlashBrightness = 255;
@@ -101,9 +100,9 @@ class PhyllotaxisFractalPattern final : public Pattern
             beatFlashBrightness = qsub8(beatFlashBrightness, 255 / (BEAT_REACTION_DURATION_FRAMES / 2 + 1));
         }
 
-        leds.dim(230);
+        Gfx.dim(230);
 
-        uint16_t currentMaxPoints = 50 + static_cast<uint16_t>(audio.energy64f * 3.5f);
+        uint16_t currentMaxPoints = 50 + static_cast<uint16_t>(Audio.energy64f * 3.5f);
         currentMaxPoints = constrain(currentMaxPoints, (uint16_t)30, numPointsCap);
 
         const float time_based_rotation_rad = static_cast<float>(beat16(5)) * (2.0f * M_PI / 65535.0f);
@@ -113,7 +112,7 @@ class PhyllotaxisFractalPattern final : public Pattern
             float angle = i * GOLDEN_ANGLE_RADIANS;
             angle += time_based_rotation_rad;
 
-            const float audioDrivenZoom = 1.0f + audio.energy64f / 128.0f;
+            const float audioDrivenZoom = 1.0f + Audio.energy64f / 128.0f;
             const float radius = scaleFactor * audioDrivenZoom * sqrtf(static_cast<float>(i));
 
             const float x_base = MATRIX_CENTER_X + radius * cosf(angle);
@@ -126,16 +125,16 @@ class PhyllotaxisFractalPattern final : public Pattern
             brightness = constrain(brightness, (uint8_t)20, (uint8_t)255);
             brightness = qadd8(brightness, beatFlashBrightness);
             const uint8_t pointSpecificBrightnessBoost =
-                static_cast<uint8_t>(audio.heights8[i % MATRIX_WIDTH] / 12 * 2.5f);
+                static_cast<uint8_t>(Audio.heights8[i % MATRIX_WIDTH] / 12 * 2.5f);
             brightness = qadd8(brightness, scale8(pointSpecificBrightnessBoost, 100));
 
             if (x_base >= 0 && x_base < MATRIX_WIDTH && y_base >= 0 && y_base < MATRIX_HEIGHT)
             {
-                leds(static_cast<uint16_t>(x_base), static_cast<uint16_t>(y_base)) += CHSV(hue, saturation, brightness);
+                Gfx(static_cast<uint16_t>(x_base), static_cast<uint16_t>(y_base)) += CHSV(hue, saturation, brightness);
             }
 
             bool makeFractal = false;
-            if (audio.isBeat && (i % (currentMaxPoints / ((audio.totalBeats % 4) + 2) + 1) == 0))
+            if (Audio.isBeat && (i % (currentMaxPoints / ((Audio.totalBeats % 4) + 2) + 1) == 0))
             {
                 makeFractal = true;
             }
@@ -147,7 +146,7 @@ class PhyllotaxisFractalPattern final : public Pattern
             if (makeFractal && currentMaxPoints > 10)
             {
 
-                const uint8_t initialBranchLength = audio.heights8[i % MATRIX_WIDTH] / 14;
+                const uint8_t initialBranchLength = Audio.heights8[i % MATRIX_WIDTH] / 14;
                 uint8_t fractalHue = hue + 64;
 
                 const Point p_origin = {x_base, y_base};
@@ -158,12 +157,12 @@ class PhyllotaxisFractalPattern final : public Pattern
                 Point p1_L1_end;
                 p1_L1_end.x = p_origin.x + initialBranchLength * cosf(branchAngle1_L1);
                 p1_L1_end.y = p_origin.y + initialBranchLength * sinf(branchAngle1_L1);
-                drawLine<CRGB>(p_origin.x, p_origin.y, p1_L1_end.x, p1_L1_end.y, CHSV(fractalHue, 255, brightness));
+                Gfx.drawLine<CRGB>(p_origin.x, p_origin.y, p1_L1_end.x, p1_L1_end.y, CHSV(fractalHue, 255, brightness));
 
                 Point p2_L1_end;
                 p2_L1_end.x = p_origin.x + initialBranchLength * cosf(branchAngle2_L1);
                 p2_L1_end.y = p_origin.y + initialBranchLength * sinf(branchAngle2_L1);
-                drawLine<CRGB>(p_origin.x, p_origin.y, p2_L1_end.x, p2_L1_end.y, CHSV(fractalHue, 255, brightness));
+                Gfx.drawLine<CRGB>(p_origin.x, p_origin.y, p2_L1_end.x, p2_L1_end.y, CHSV(fractalHue, 255, brightness));
 
                 if (const float subBranchLength = initialBranchLength * GOLDEN_RATIO_INV; subBranchLength >= 0.8f)
                 {
@@ -176,12 +175,12 @@ class PhyllotaxisFractalPattern final : public Pattern
                     Point p1_L2a_end, p1_L2b_end;
                     p1_L2a_end.x = p1_L1_end.x + subBranchLength * cosf(branchAngle1_L2a);
                     p1_L2a_end.y = p1_L1_end.y + subBranchLength * sinf(branchAngle1_L2a);
-                    drawLine<CRGB>(
+                    Gfx.drawLine<CRGB>(
                         p1_L1_end.x, p1_L1_end.y, p1_L2a_end.x, p1_L2a_end.y, CHSV(fractalHue, 255, subBrightness));
 
                     p1_L2b_end.x = p1_L1_end.x + subBranchLength * cosf(branchAngle1_L2b);
                     p1_L2b_end.y = p1_L1_end.y + subBranchLength * sinf(branchAngle1_L2b);
-                    drawLine<CRGB>(
+                    Gfx.drawLine<CRGB>(
                         p1_L1_end.x, p1_L1_end.y, p1_L2b_end.x, p1_L2b_end.y, CHSV(fractalHue, 255, subBrightness));
 
                     const float branchAngle2_L2a = branchAngle2_L1 + GOLDEN_ANGLE_RADIANS * 0.25f;
@@ -189,12 +188,12 @@ class PhyllotaxisFractalPattern final : public Pattern
                     Point p2_L2a_end, p2_L2b_end;
                     p2_L2a_end.x = p2_L1_end.x + subBranchLength * cosf(branchAngle2_L2a);
                     p2_L2a_end.y = p2_L1_end.y + subBranchLength * sinf(branchAngle2_L2a);
-                    drawLine<CRGB>(
+                    Gfx.drawLine<CRGB>(
                         p2_L1_end.x, p2_L1_end.y, p2_L2a_end.x, p2_L2a_end.y, CHSV(fractalHue, 255, subBrightness));
 
                     p2_L2b_end.x = p2_L1_end.x + subBranchLength * cosf(branchAngle2_L2b);
                     p2_L2b_end.y = p2_L1_end.y + subBranchLength * sinf(branchAngle2_L2b);
-                    drawLine<CRGB>(
+                    Gfx.drawLine<CRGB>(
                         p2_L1_end.x, p2_L1_end.y, p2_L2b_end.x, p2_L2b_end.y, CHSV(fractalHue, 255, subBrightness));
                 }
             }
@@ -206,23 +205,23 @@ class PhyllotaxisFractalPattern final : public Pattern
             hueMsGlobal = millis();
         }
 
-        if (audio.totalBeats % 4 == 0)
+        if (Audio.totalBeats % 4 == 0)
         {
-            kaleidoscope1();
-            if (audio.energy64f > 30)
+            Gfx.kaleidoscope1();
+            if (Audio.energy64f > 30)
             {
-                kaleidoscope3();
+                Gfx.kaleidoscope3();
             }
         }
         else
         {
-            kaleidoscope3();
-            if (audio.energy64f > 30)
+            Gfx.kaleidoscope3();
+            if (Audio.energy64f > 30)
             {
-                kaleidoscope1();
+                Gfx.kaleidoscope1();
             }
         }
 
-        kaleidoscope2();
+        Gfx.kaleidoscope2();
     }
 };

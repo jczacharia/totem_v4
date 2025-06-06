@@ -9,10 +9,10 @@ class AudioClassicSpectrum128Pattern : public Pattern
     CRGBPalette16 palettePeaks = randomPalette();
 
   public:
-    static constexpr auto ID = "AudioClassicSpectrum128";
+    static constexpr auto ID = "Classic Spectrum 128";
 
-    explicit AudioClassicSpectrum128Pattern(MatrixLeds &leds, MatrixNoise &noise, AudioContext &audio)
-        : Pattern(ID, leds, noise, audio)
+    explicit AudioClassicSpectrum128Pattern()
+        : Pattern(ID)
     {
         hue_ms = millis();
         hueCycle = random8(0, 2);
@@ -31,16 +31,16 @@ class AudioClassicSpectrum128Pattern : public Pattern
     {
         for (byte i = 0; i < MATRIX_WIDTH; i++)
         {
-            drawLine(i, 0, i, audio.peaks8[(MATRIX_WIDTH - 1) - i] / 7, ColorFromPalette(palettePeaks, i * 4));
-            drawLine(
-                i, MATRIX_WIDTH - 1, i, MATRIX_HEIGHT - (audio.peaks8[i] / 7), ColorFromPalette(palettePeaks, i * 4));
+            Gfx.drawLine(i, 0, i, Audio.peaks8[(MATRIX_WIDTH - 1) - i] / 7, ColorFromPalette(palettePeaks, i * 4));
+            Gfx.drawLine(
+                i, MATRIX_WIDTH - 1, i, MATRIX_HEIGHT - (Audio.peaks8[i] / 7), ColorFromPalette(palettePeaks, i * 4));
 
-            drawLine(i, 0, i, audio.heights8[(MATRIX_WIDTH - 1) - i] / 9, ColorFromPalette(paletteHeights, i * 4));
-            drawLine(
+            Gfx.drawLine(i, 0, i, Audio.heights8[(MATRIX_WIDTH - 1) - i] / 9, ColorFromPalette(paletteHeights, i * 4));
+            Gfx.drawLine(
                 i,
                 MATRIX_WIDTH - 1,
                 i,
-                MATRIX_HEIGHT - (audio.heights8[i] / 9),
+                MATRIX_HEIGHT - (Audio.heights8[i] / 9),
                 ColorFromPalette(paletteHeights, i * 4));
         }
 
@@ -50,15 +50,15 @@ class AudioClassicSpectrum128Pattern : public Pattern
               for (byte i = 0; i < MATRIX_WIDTH; i++)
               {
                 //bass
-                drawLine(i, MATRIX_WIDTH - 1, i, MATRIX_HEIGHT -(audio.peaks8[i] / 8), i*4, 255,
+                Gfx.drawLine(i, MATRIX_WIDTH - 1, i, MATRIX_HEIGHT -(Audio.peaks8[i] / 8), i*4, 255,
            LINEARBLEND);
               }
 
               for (byte i = 0; i < MATRIX_WIDTH; i++)
               {
                 //treble
-                drawLine(i, 0, i, audio.peaks8Peak[127-i] / 6, i*4, 63, NOBLEND);
-                drawLine(i, 0, i, audio.peaks8[127-i] / 6, i*4, 255, LINEARBLEND);
+                Gfx.drawLine(i, 0, i, Audio.peaks8Peak[127-i] / 6, i*4, 63, NOBLEND);
+                Gfx.drawLine(i, 0, i, Audio.peaks8[127-i] / 6, i*4, 255, LINEARBLEND);
               }
         */
 

@@ -1,7 +1,6 @@
 ﻿#pragma once
 
 #include "Geometry.h"
-#include "Matrix.h"
 
 class RotatingSpectrumPattern final : public Pattern
 {
@@ -24,7 +23,7 @@ class RotatingSpectrumPattern final : public Pattern
     uint8_t vertical;
     bool backdrop;
     bool kaleidoscope;
-    uint8_t kaleidoscopeEffect;
+    uint8_t kaleidoscopeMode;
     uint8_t audioScale;
 
     bool hueCycle2 = false;
@@ -45,10 +44,10 @@ class RotatingSpectrumPattern final : public Pattern
     float angle = 0;
 
   public:
-    static constexpr auto ID = "RotatingSpectrum";
+    static constexpr auto ID = "Rotating Spectrum";
 
-    explicit RotatingSpectrumPattern(MatrixLeds &leds, MatrixNoise &noise, AudioContext &audio)
-        : Pattern(ID, leds, noise, audio)
+    explicit RotatingSpectrumPattern()
+        : Pattern(ID)
     {
     }
 
@@ -84,13 +83,13 @@ class RotatingSpectrumPattern final : public Pattern
         vertical = random8(0, 3);
         backdrop = random8(0, 2);
         kaleidoscope = random8(0, 5); // 80% chance of kaleidoscope
-        kaleidoscopeEffect = random8(1, KALEIDOSCOPE_COUNT + 1);
+        kaleidoscopeMode = random8(1, KALEIDOSCOPE_COUNT + 1);
         audioScale = random8(5, 9);
         // useCurrentPalette = true;
         // colorSpread = 4;
         // kaleidoscope = true;
 
-        noise.randomize();
+        Noise.randomize();
 
         p1.x = 9;
         p1.y = 31;
@@ -101,21 +100,21 @@ class RotatingSpectrumPattern final : public Pattern
     // --------------------- DRAW FRAME -------------------------
     void render() override
     {
-        if (audio.isBeat)
+        if (Audio.isBeat)
         {
-            if (audio.totalBeats % 4 == 0)
+            if (Audio.totalBeats % 4 == 0)
             {
                 colorSpread = random(1, 5);
                 vertical = random8(0, 3);
                 backdrop = random8(0, 2);
                 kaleidoscope = random8(0, 5);
-                kaleidoscopeEffect = random8(1, KALEIDOSCOPE_COUNT + 1);
+                kaleidoscopeMode = random8(1, KALEIDOSCOPE_COUNT + 1);
                 audioScale = random8(5, 7);
             }
         }
 
         // if we are going to dim all, then do it gradually
-        leds.dim(dimVal);
+        Gfx.dim(dimVal);
         if (dimVal > dimEnd)
             dimVal--;
         // leds.dim(180);
@@ -220,7 +219,7 @@ class RotatingSpectrumPattern final : public Pattern
         for (byte i = 0; i < 96; i++)
         {
             const uint8_t p_i = i * 63 / 95;
-            const uint8_t data = audio.heights8[p_i] / audioScale;
+            const uint8_t data = Audio.heights8[p_i] / audioScale;
             x1 = i - 16;
             x2 = i - 16;
             y1 = MATRIX_HEIGHT - 1;
@@ -239,16 +238,17 @@ class RotatingSpectrumPattern final : public Pattern
 
             if (data)
             {
-                drawLine(rp1.x, rp1.y, rp2.x, rp2.y, ColorFromPalette(palette, i * colorSpread, audio.energy8Peaks));
+                Gfx.drawLine(
+                    rp1.x, rp1.y, rp2.x, rp2.y, ColorFromPalette(palette, i * colorSpread, Audio.energy8Peaks));
                 // Matrix::BresLineCanvasH(Matrix::canvasH.data(), rp1.x - 16, rp1.y - 16, rp2.x - 16,
                 // rp2.y - 16,
-                //                         (i * colorSpread) + 128, audio.energy8);
+                //                         (i * colorSpread) + 128, Audio.energy8);
                 if (vertical)
                 {
-                    drawLine(rp1.y, rp1.x, rp2.y, rp2.x, ColorFromPalette(palette, i * colorSpread, audio.energy8));
+                    Gfx.drawLine(rp1.y, rp1.x, rp2.y, rp2.x, ColorFromPalette(palette, i * colorSpread, Audio.energy8));
                     // Matrix::BresLineCanvasH(Matrix::canvasH.data(), rp1.y - 16, rp1.x - 16, rp2.y - 16,
                     // rp2.x - 16,
-                    //                         (i * colorSpread) + 128, audio.energy8);
+                    //                         (i * colorSpread) + 128, Audio.energy8);
                 }
             }
         }
@@ -281,14 +281,14 @@ class RotatingSpectrumPattern final : public Pattern
 
         if (kaleidoscope)
         {
-            randomKaleidoscope(kaleidoscopeEffect);
-            if (audio.totalBeats % 3 == 0)
+            Gfx.randomKaleidoscope(kaleidoscopeMode);
+            if (Audio.totalBeats % 3 == 0)
             {
-                kaleidoscope2();
+                Gfx.kaleidoscope2();
             }
             else
             {
-                kaleidoscope1();
+                Gfx.kaleidoscope1();
             }
         }
     }

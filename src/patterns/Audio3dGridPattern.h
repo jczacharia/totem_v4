@@ -20,10 +20,10 @@ class Audio3dGridPattern final : public Pattern
     }
 
   public:
-    static constexpr auto ID = "Audio3dGrid";
+    static constexpr auto ID = "3D Grid";
 
-    explicit Audio3dGridPattern(MatrixLeds &leds, MatrixNoise &noise, AudioContext &aud)
-        : Pattern(ID, leds, noise, aud)
+    Audio3dGridPattern()
+        : Pattern(ID)
     {
     }
 
@@ -47,11 +47,11 @@ class Audio3dGridPattern final : public Pattern
         int yStart = 17;
         byte aud;
 
-        leds.dim(150);
+        Gfx.dim(150);
 
         for (int i = 0; i < 121; i++)
         {
-            aud = audio.heights8[(MATRIX_WIDTH - 1) * i / 120] / 20;
+            aud = Audio.heights8[(MATRIX_WIDTH - 1) * i / 120] / 20;
 
             if (drawVertical)
             {
@@ -59,88 +59,88 @@ class Audio3dGridPattern final : public Pattern
                 {
                     x = xStart + (i * 5);
                     y = yStart + (i * 2);
-                    drawLine(x, y, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 128));
-                    drawLine(x, y - aud, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 255));
+                    Gfx.drawLine(x, y, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 128));
+                    Gfx.drawLine(x, y - aud, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 255));
                 }
 
                 if (i >= 11 && i < 22)
                 {
                     x = xStart - 1 + ((i - 11) * 5);
                     y = yStart + 2 + ((i - 11) * 2);
-                    drawLine(x, y, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 128));
-                    drawLine(x, y - aud, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 255));
+                    Gfx.drawLine(x, y, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 128));
+                    Gfx.drawLine(x, y - aud, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 255));
                 }
 
                 if (i >= 22 && i < 33)
                 {
                     x = xStart - 2 + ((i - 22) * 5);
                     y = yStart + 4 + ((i - 22) * 2);
-                    drawLine(x, y, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 128));
-                    drawLine(x, y - aud, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 255));
+                    Gfx.drawLine(x, y, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 128));
+                    Gfx.drawLine(x, y - aud, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 255));
                 }
 
                 if (i >= 33 && i < 44)
                 {
                     x = xStart - 3 + ((i - 33) * 5);
                     y = yStart + 6 + ((i - 33) * 2);
-                    drawLine(x, y, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 128));
-                    drawLine(x, y - aud, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 255));
+                    Gfx.drawLine(x, y, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 128));
+                    Gfx.drawLine(x, y - aud, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 255));
                 }
 
                 if (i >= 44 && i < 55)
                 {
                     x = xStart - 4 + ((i - 44) * 5);
                     y = yStart + 8 + ((i - 44) * 2);
-                    drawLine(x, y, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 128));
-                    drawLine(x, y - aud, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 255));
+                    Gfx.drawLine(x, y, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 128));
+                    Gfx.drawLine(x, y - aud, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 255));
                 }
 
                 if (i >= 55 && i < 66)
                 {
                     x = xStart - 5 + ((i - 55) * 5);
                     y = yStart + 10 + ((i - 55) * 2);
-                    drawLine(x, y, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 128));
-                    drawLine(x, y - aud, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 255));
+                    Gfx.drawLine(x, y, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 128));
+                    Gfx.drawLine(x, y - aud, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 255));
                 }
 
                 if (i >= 66 && i < 77)
                 {
                     x = xStart - 6 + ((i - 66) * 5);
                     y = yStart + 12 + ((i - 66) * 2);
-                    drawLine(x, y, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 128));
-                    drawLine(x, y - aud, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 255));
+                    Gfx.drawLine(x, y, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 128));
+                    Gfx.drawLine(x, y - aud, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 255));
                 }
 
                 if (i >= 77 && i < 88)
                 {
                     x = xStart - 7 + ((i - 77) * 5);
                     y = yStart + 14 + ((i - 77) * 2);
-                    drawLine(x, y, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 128));
-                    drawLine(x, y - aud, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 255));
+                    Gfx.drawLine(x, y, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 128));
+                    Gfx.drawLine(x, y - aud, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 255));
                 }
 
                 if (i >= 88 && i < 99)
                 {
                     x = xStart - 8 + ((i - 88) * 5);
                     y = yStart + 16 + ((i - 88) * 2);
-                    drawLine(x, y, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 128));
-                    drawLine(x, y - aud, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 255));
+                    Gfx.drawLine(x, y, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 128));
+                    Gfx.drawLine(x, y - aud, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 255));
                 }
 
                 if (i >= 99 && i < 110)
                 {
                     x = xStart - 9 + ((i - 99) * 5);
                     y = yStart + 18 + ((i - 99) * 2);
-                    drawLine(x, y, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 128));
-                    drawLine(x, y - aud, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 255));
+                    Gfx.drawLine(x, y, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 128));
+                    Gfx.drawLine(x, y - aud, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 255));
                 }
 
                 if (i >= 110 && i < 121)
                 {
                     x = xStart - 10 + ((i - 110) * 5);
                     y = yStart + 20 + ((i - 110) * 2);
-                    drawLine(x, y, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 128));
-                    drawLine(x, y - aud, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 255));
+                    Gfx.drawLine(x, y, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 128));
+                    Gfx.drawLine(x, y - aud, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 255));
                 }
             }
 
@@ -152,7 +152,7 @@ class Audio3dGridPattern final : public Pattern
                     x = xStart + (i * 5);
                     y = yStart + (i * 2);
                     if (i != 0)
-                        drawLine(oldx, oldy, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 128));
+                        Gfx.drawLine(oldx, oldy, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 128));
                 }
 
                 if (i >= 11 && i < 22)
@@ -160,7 +160,7 @@ class Audio3dGridPattern final : public Pattern
                     x = xStart - 1 + ((i - 11) * 5);
                     y = yStart + 2 + ((i - 11) * 2);
                     if (i != 11)
-                        drawLine(oldx, oldy, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 128));
+                        Gfx.drawLine(oldx, oldy, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 128));
                 }
 
                 if (i >= 22 && i < 33)
@@ -168,7 +168,7 @@ class Audio3dGridPattern final : public Pattern
                     x = xStart - 2 + ((i - 22) * 5);
                     y = yStart + 4 + ((i - 22) * 2);
                     if (i != 22)
-                        drawLine(oldx, oldy, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 128));
+                        Gfx.drawLine(oldx, oldy, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 128));
                 }
 
                 if (i >= 33 && i < 44)
@@ -176,7 +176,7 @@ class Audio3dGridPattern final : public Pattern
                     x = xStart - 3 + ((i - 33) * 5);
                     y = yStart + 6 + ((i - 33) * 2);
                     if (i != 33)
-                        drawLine(oldx, oldy, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 128));
+                        Gfx.drawLine(oldx, oldy, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 128));
                 }
 
                 if (i >= 44 && i < 55)
@@ -184,7 +184,7 @@ class Audio3dGridPattern final : public Pattern
                     x = xStart - 4 + ((i - 44) * 5);
                     y = yStart + 8 + ((i - 44) * 2);
                     if (i != 44)
-                        drawLine(oldx, oldy, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 128));
+                        Gfx.drawLine(oldx, oldy, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 128));
                 }
 
                 if (i >= 55 && i < 66)
@@ -192,7 +192,7 @@ class Audio3dGridPattern final : public Pattern
                     x = xStart - 5 + ((i - 55) * 5);
                     y = yStart + 10 + ((i - 55) * 2);
                     if (i != 55)
-                        drawLine(oldx, oldy, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 128));
+                        Gfx.drawLine(oldx, oldy, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 128));
                 }
 
                 if (i >= 66 && i < 77)
@@ -200,7 +200,7 @@ class Audio3dGridPattern final : public Pattern
                     x = xStart - 6 + ((i - 66) * 5);
                     y = yStart + 12 + ((i - 66) * 2);
                     if (i != 66)
-                        drawLine(oldx, oldy, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 128));
+                        Gfx.drawLine(oldx, oldy, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 128));
                 }
 
                 if (i >= 77 && i < 88)
@@ -208,7 +208,7 @@ class Audio3dGridPattern final : public Pattern
                     x = xStart - 7 + ((i - 77) * 5);
                     y = yStart + 14 + ((i - 77) * 2);
                     if (i != 77)
-                        drawLine(oldx, oldy, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 128));
+                        Gfx.drawLine(oldx, oldy, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 128));
                 }
 
                 if (i >= 88 && i < 99)
@@ -216,7 +216,7 @@ class Audio3dGridPattern final : public Pattern
                     x = xStart - 8 + ((i - 88) * 5);
                     y = yStart + 16 + ((i - 88) * 2);
                     if (i != 88)
-                        drawLine(oldx, oldy, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 128));
+                        Gfx.drawLine(oldx, oldy, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 128));
                 }
 
                 if (i >= 99 && i < 110)
@@ -224,7 +224,7 @@ class Audio3dGridPattern final : public Pattern
                     x = xStart - 9 + ((i - 99) * 5);
                     y = yStart + 18 + ((i - 99) * 2);
                     if (i != 99)
-                        drawLine(oldx, oldy, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 128));
+                        Gfx.drawLine(oldx, oldy, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 128));
                 }
 
                 if (i >= 110 && i < 121)
@@ -232,7 +232,7 @@ class Audio3dGridPattern final : public Pattern
                     x = xStart - 10 + ((i - 110) * 5);
                     y = yStart + 20 + ((i - 110) * 2);
                     if (i != 110)
-                        drawLine(oldx, oldy, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 128));
+                        Gfx.drawLine(oldx, oldy, x, y - aud, ColorFromPalette(palette, hue + (i * 2), 128));
                 }
             }
 

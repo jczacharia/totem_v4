@@ -27,16 +27,12 @@ class Audio8x8SquaresPattern final : public Pattern
     // backdrop only random stuff
     uint8_t backdrop = 0; // 0=don't draw backdrop, 1-4=draw various scaled backdrops (override if there are alreadt too
                           // many backdrops?)
-    int8_t mirrorVert = 0; // todo: 0=don't mirror, 1=straight mirror, 2=rotate 180 degrees
     // main effects random stuff
-    uint8_t mainEffect = 0;         // 0=todo main effects
-    bool caleidoscope = false;      // main effect drawn on quarter screen and apply caleidoscope effect
-    uint8_t caleidoscopeEffect = 0; // which caleidoscope effect to apply
-    uint8_t sprites = 0;            // will we used half width sprites, if so how many....
-    uint8_t spriteBehaviour = 0;    // 0=stationary, 1=revolving around screen
+    uint8_t sprites = 0;         // will we used half width sprites, if so how many....
+    uint8_t spriteBehaviour = 0; // 0=stationary, 1=revolving around screen
 
   public:
-    static constexpr auto ID = "Audio8x8Squares";
+    static constexpr auto ID = "8x8 Squares";
 
     Audio8x8SquaresPattern()
         : Pattern(ID)
@@ -50,23 +46,16 @@ class Audio8x8SquaresPattern final : public Pattern
         // randomize the effects to use
         generalRand1 = random(0, 2); // for stream effect directions
         cycleColors = random(0, 3);  // 75% of the time, the color palette will be cycled
-        mirrorVert = random(0, 3);   // 33% not mirror, 66% one of the two mirror options
-        mainEffect = random(0, 2);
-        caleidoscope = random(0, 2);
-        caleidoscopeEffect = random(0, 2);
         backdrop =
-            random(0, 5); // 1 in 5 chance of no background being rendered, otherwise averge chance to any of the 4
+            random(1, 5); // 1 in 5 chance of no background being rendered, otherwise averge chance to any of the 4
         audioRange = random8(0, 4); // same chance for getting any of the 5 audio ranges
 
         // override some randomizations if previous patterns are over active, or for any other reason
         // if (PatternsAudioBackdropCount > 2 && random8(0,5)) backdrop = 0;              // if too many previous
         // backdrops, then only a 1 in 5 chance of rendering another backdrop if (PatternsAudioMainEffectCount > 2 &&
-        // random8(0,5)) mainEffect = 0;          // if too many previous main effects, then only a 1 in 5 chance of
         // rendering another effect
 
         // ## ----- override random stuff for testing ----- ##
-        caleidoscope = false;
-        caleidoscopeEffect = 1;
         // backdrop = 3;
         if (backdrop == 0)
             backdrop = 4;
@@ -75,7 +64,7 @@ class Audio8x8SquaresPattern final : public Pattern
         // generate random canvas, sprites etc. to use in animations
 
         // setup parameters depending on random stuff
-        if (!caleidoscope)
+        if (!kaleidoscope)
         {
             canvasWidth = MATRIX_WIDTH;
             canvasCentreX = MATRIX_CENTER_X;
@@ -103,11 +92,25 @@ class Audio8x8SquaresPattern final : public Pattern
             // ocassionally scaling canvas randomly canvasCentreX = canvasCentreX / 2;              // ditto
             // canvasCentreY = canvasCentreY / 2;              // ditto
         }
+
+        kaleidoscopeMode = random8(1, KALEIDOSCOPE_COUNT + 1);
+        palette = randomPalette();
     };
 
     // #------------- DRAW FRAME -------------#
     void render() override
     {
+        if (Audio.isBeat)
+        {
+            if (Audio.totalBeats % 4 == 0)
+            {
+                kaleidoscopeMode = random8(1, KALEIDOSCOPE_COUNT + 1);
+                backdrop = random(1, 5);
+                generalRand1 = random(0, 2);
+                audioRange = random8(0, 4);
+            }
+        }
+
         // order - indicates the order in which the effect is being drawn, patterns can use the appropriate pre and post
         // effects, if any, depending on order etc. total - the total number of audio effect animations being played
         // simultaineously
@@ -132,13 +135,12 @@ class Audio8x8SquaresPattern final : public Pattern
         // single canvas for use in the backdrop or main animations
         if (backdrop || sprites > 0)
         {
-            ClearCanvas(1); // clear half width canvas 1
             uint8_t canvasScale = 4;
             uint8_t canvasWidth = MATRIX_WIDTH / canvasScale;
             uint8_t canvasHeight = MATRIX_HEIGHT / canvasScale;
             uint8_t centreX = (MATRIX_WIDTH / 2) / canvasScale;
             uint8_t centreY = (MATRIX_HEIGHT / 2) / canvasScale;
-            uint8_t audioScale = canvasScale * 2;
+            uint8_t audioScale = canvasScale * 4;
 
             // draw simple quarter width square to scale up for a background
             for (int i = 0; i < canvasWidth; i++)
@@ -148,19 +150,19 @@ class Audio8x8SquaresPattern final : public Pattern
                 {
                     case 0:
                         // full range
-                        audioData = fftData.specData16[i] / audioScale;
+                        audioData = Audio.heights8[i] / audioScale;
                         break;
                     case 1:
                         // bass centric
-                        audioData = fftData.specData32[i] / audioScale;
+                        audioData = Audio.heights8[i] / audioScale;
                         break;
                     case 2:
                         // mids centric
-                        audioData = fftData.specData32[i + 8] / audioScale;
+                        audioData = Audio.heights8[i + 8] / audioScale;
                         break;
                     case 3:
                         // treble centric
-                        audioData = fftData.specData32[i + 16] / audioScale;
+                        audioData = Audio.heights8[i + 16] / audioScale;
                         break;
                 }
                 if (audioData >= canvasHeight)
@@ -169,18 +171,14 @@ class Audio8x8SquaresPattern final : public Pattern
                 if (audioData > 0)
                 {
                     // BresenhamLineCanvasH(i, canvasHeight - audioData, i, 0,
-                    // ColorFromCurrentPalette((i*16) + color1, 32)); BresenhamLineCanvasH(i,
-                    // canvasHeight - 1, i, canvasHeight - audioData, ColorFromCurrentPalette((i*16) + color2,
+                    // ColorFromPalette(palette,(i*16) + color1, 32)); BresenhamLineCanvasH(i,
+                    // canvasHeight - 1, i, canvasHeight - audioData, ColorFromPalette(palette,(i*16) + color2,
                     // 255));
-                    BresLineCanvasH(
-                        canvasH, i, canvasHeight - audioData, i, 0, ColorFromCurrentPalette((i * 16) + color1, 32));
-                    BresLineCanvasH(
-                        canvasH,
-                        i,
-                        canvasHeight - 1,
-                        i,
-                        canvasHeight - audioData,
-                        ColorFromCurrentPalette((i * 16) + color2, 255));
+                    GfxCanvasH.drawLine(
+                        i, canvasHeight - audioData, i, 0, ColorFromPalette(palette, (i * 16) + color1, Audio.energy8));
+                    GfxCanvasH.drawLine(
+
+                        i, canvasHeight - 1, i, canvasHeight - audioData, ColorFromPalette(palette, (i * 16) + color2));
                 }
             }
 
@@ -190,30 +188,30 @@ class Audio8x8SquaresPattern final : public Pattern
             {
                 for (int i = 0; i < canvasScale; i++)
                 {
-                    ApplyCanvasH(canvasH, i * canvasWidth, 0, 1);
-                    ApplyCanvasH(canvasH, i * canvasWidth, 16, 1);
-                    ApplyCanvasH(canvasH, i * canvasWidth, 32, 1);
-                    ApplyCanvasH(canvasH, i * canvasWidth, 48, 1);
+                    Gfx.applyOther(GfxCanvasH, i * canvasWidth, 0, 1);
+                    Gfx.applyOther(GfxCanvasH, i * canvasWidth, 16, 1);
+                    Gfx.applyOther(GfxCanvasH, i * canvasWidth, 32, 1);
+                    Gfx.applyOther(GfxCanvasH, i * canvasWidth, 48, 1);
                 }
                 // ApplyCanvas(0, 0, 4.0);
-                DimAll(180);
+                Gfx.dim(180);
             }
 
             if (backdrop == 2)
             {
-                ApplyCanvasH(canvasH, 16, 16, 2.0, 128); // 64 = light blur
+                Gfx.applyOther(GfxCanvasH, 16, 16, 2.0, 128); // 64 = light blur
             }
 
             // overscaled half width canvas centered on frame/screen
             if (backdrop == 3)
             {
-                ApplyCanvasH(canvasH, 0, 0, 4.0, 64); // 64 = light blur
+                Gfx.applyOther(GfxCanvasH, 0, 0, 4.0, 64); // 64 = light blur
             }
 
             if (backdrop == 4)
             {
-                ApplyCanvasH(canvasH, 16, 16, 2.0, 128); // 64 = light blur
-                ApplyCanvasH(canvasH, 0, 0, 4.0, 64);    // 64 = light blur
+                Gfx.applyOther(GfxCanvasH, 16, 16, 2.0, 128); // 64 = light blur
+                Gfx.applyOther(GfxCanvasH, 0, 0, 4.0, 64);    // 64 = light blur
             }
 
             // apply test effects
@@ -223,34 +221,25 @@ class Audio8x8SquaresPattern final : public Pattern
                 {
                     if (generalRand2)
                     {
-                        streamRight(128);
+                        Gfx.streamRight(128);
                     }
                     else
                     {
-                        streamUpAndRight(128);
+                        Gfx.streamUpAndRight(128);
                     }
                 }
                 else
                 {
-                    streamUp(128);
+                    Gfx.streamUp(128);
                 }
             }
         }
 
-        // ---------------------- generate main foreground animation ------------------------
-
-        // if we are in caleidoscope mode, focus the rendering on the top left corner
-
-        // todo: caleidoscope options
-        if (caleidoscope)
+        if (kaleidoscope)
         {
-            kaleidoscope1Centre(); // default for now
+            Gfx.randomKaleidoscope(kaleidoscopeMode);
+            Gfx.kaleidoscope2();
+            Gfx.kaleidoscope1();
         }
-
-        // ----------------- if so, apply randomish caleidoscope effect ---------------------
-
-        // TODO:
-
-        leds.dim(250); // 150 is good for clean bars
     }
 };

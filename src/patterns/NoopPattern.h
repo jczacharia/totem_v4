@@ -5,8 +5,8 @@ class NoopPattern final : public Pattern
   public:
     static constexpr auto ID = "Noop";
 
-    explicit NoopPattern(MatrixLeds &leds, MatrixNoise &noise, AudioContext &audio)
-        : Pattern(ID, leds, noise, audio)
+    explicit NoopPattern()
+        : Pattern(ID)
     {
     }
 

@@ -2,49 +2,82 @@
 
 class AuroraDropPattern final : public Pattern
 {
-    uint32_t dx = 0, dy = 0, dz = 0;
-    CRGBPalette16 palette = randomPalette();
-    uint8_t kaleidoscopeEffect = 0;
+    uint32_t x = 0, y = 0, v_time = 0, hue_time = 0, hxy = 0;
+    uint8_t octaves = 1;
+    uint8_t hue_octaves = 3;
+    int xscale = 57771;
+    int yscale = 57771;
+    int hue_scale = 1;
+    int time_speed = 1111;
+    int hue_speed = 31;
+    int x_speed = 331;
+    int y_speed = 1111;
 
   public:
-    static constexpr auto ID = "AuroraDrop";
+    static constexpr auto ID = "Aurora Drop";
 
-    explicit AuroraDropPattern()
+    AuroraDropPattern()
         : Pattern(ID)
     {
     }
 
     void start() override
     {
-        noise.randomize();
-        dy = random16(2000) - 1000;
-        dx = random16(500) - 250;
-        dz = random16(500) - 250;
-        noise.noiseScaleX = random16(10000) + 2000;
-        noise.noiseScaleY = random16(10000) + 2000;
-        palette = randomPalette();
-        kaleidoscopeEffect = random8(1, MatrixLeds::KALEIDOSCOPE_COUNT + 1);
+        hxy = (static_cast<uint32_t>(random16()) << 16) + static_cast<uint32_t>(random16());
+        x = (static_cast<uint32_t>(random16()) << 16) + static_cast<uint32_t>(random16());
+        y = (static_cast<uint32_t>(random16()) << 16) + static_cast<uint32_t>(random16());
+        v_time = (static_cast<uint32_t>(random16()) << 16) + static_cast<uint32_t>(random16());
+        hue_time = (static_cast<uint32_t>(random16()) << 16) + static_cast<uint32_t>(random16());
+        Noise.randomize();
+        kaleidoscopeMode = random8(1, Gfx.KALEIDOSCOPE_COUNT + 1);
     }
 
     void render() override
     {
-        noise.noiseX += dx;
-        noise.noiseY += dy;
-        noise.noiseZ += dz;
-        noise.fill();
+        fill_2dnoise16(
+            GfxCanvasQ.data(),
+            GfxCanvasQ.width(),
+            GfxCanvasQ.height(),
+            false,
+            octaves,
+            x,
+            xscale,
+            y,
+            yscale,
+            v_time,
+            hue_octaves,
+            hxy,
+            hue_scale,
+            hxy,
+            hue_scale,
+            hue_time,
+            false);
 
-        for (uint8_t i = 0; i < MATRIX_WIDTH; i++)
+        size_t bin = 0;
+        for (size_t x = 0; x < GfxCanvasQ.width(); x++)
         {
-            for (uint8_t j = 0; j < MATRIX_HEIGHT; j++)
+            for (size_t y = 0; y < GfxCanvasQ.height(); y++)
             {
-                const uint8_t color = noise(i, j);
-                bkgLeds(i, j) = ColorFromPalette(palette, color, audio.energy8Scaled);
+                GfxCanvasQ(x, y).nscale8(std::min(255.0f, 1.25f * Audio.heights8[bin++]));
+                if (bin >= Audio.heights8.size())
+                {
+                    bin = 0;
+                }
             }
         }
 
-        blur2d(bkgLeds.data(), MATRIX_WIDTH, MATRIX_HEIGHT, 255 - audio.energy8);
-        bkgLeds.randomKaleidoscope(kaleidoscopeEffect);
-        bkgLeds.kaleidoscope1();
-        bkgLeds.dim(50);
+        Gfx.applyOther(GfxCanvasQ, 0, 0);
+        Gfx.applyOther(GfxCanvasQ, Gfx.centerX() / 2, 0);
+        Gfx.applyOther(GfxCanvasQ, 0, Gfx.centerY() / 2);
+        Gfx.applyOther(GfxCanvasQ, Gfx.centerX() / 2, Gfx.centerY() / 2);
+        blur2d(Gfx.data(), Gfx.width(), Gfx.height(), Audio.energy8 / 2);
+
+        GfxBkg.randomKaleidoscope(kaleidoscopeMode);
+        Gfx.kaleidoscope1();
+
+        x += x_speed;
+        y += y_speed;
+        v_time += time_speed;
+        hue_time += hue_speed;
     }
 };

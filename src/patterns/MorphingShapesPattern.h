@@ -1,7 +1,5 @@
 ﻿#pragma once
 
-#include "Matrix.h"
-
 class MorphingShapesPattern final : public Pattern
 {
     static constexpr uint8_t MAX_VERTICES = 8;
@@ -40,7 +38,7 @@ class MorphingShapesPattern final : public Pattern
 
     void generateShape(Vertex *shape, const ShapeType type, uint8_t &vertCount) const
     {
-        const int16_t radius = 20 * audio.energy8Scaled + 1;
+        const int16_t radius = 20 * Audio.energy8Scaled + 1;
 
         switch (type)
         {
@@ -133,15 +131,15 @@ class MorphingShapesPattern final : public Pattern
             const int16_t ry2 = ((x2 * sin_r + y2 * cos_r) >> 8) + centerY;
 
             const CRGB color = ColorFromPalette(palette, i * (256 / verts), brightness);
-            drawLine(rx1 >> 8, ry1 >> 8, rx2 >> 8, ry2 >> 8, color);
+            Gfx.drawLine(rx1 >> 8, ry1 >> 8, rx2 >> 8, ry2 >> 8, color);
         }
     }
 
   public:
-    static constexpr auto ID = "MorphingShapes";
+    static constexpr auto ID = "Morphing Shapes";
 
-    explicit MorphingShapesPattern(MatrixLeds &leds, MatrixNoise &noise, AudioContext &audio)
-        : Pattern(ID, leds, noise, audio)
+    explicit MorphingShapesPattern()
+        : Pattern(ID)
     {
     }
 
@@ -161,14 +159,14 @@ class MorphingShapesPattern final : public Pattern
 
     void render() override
     {
-        if (audio.isBeat)
+        if (Audio.isBeat)
         {
-            if (audio.totalBeats % 4 == 0)
+            if (Audio.totalBeats % 4 == 0)
             {
                 beatBrightness = 255;
                 kaleidoscopeMode = random8(1, KALEIDOSCOPE_COUNT + 1);
 
-                if (audio.energy64fScaled > 40)
+                if (Audio.energy8Scaled >= 254)
                 {
                     if (const auto newShape = static_cast<ShapeType>(random8(SHAPE_COUNT));
                         newShape != currentShapeType)
@@ -176,7 +174,7 @@ class MorphingShapesPattern final : public Pattern
                         currentShapeType = newShape;
                         generateShape(targetShape, currentShapeType, targetNumVertices);
                         morphProgress = 0;
-                        morphSpeed = 5 + (static_cast<uint8_t>(audio.energy64fScaled) >> 2);
+                        morphSpeed = 5 + (static_cast<uint8_t>(Audio.energy64fScaled) >> 2);
                     }
                 }
 
@@ -189,7 +187,7 @@ class MorphingShapesPattern final : public Pattern
                     }
                 }
 
-                targetScale = 100 + (static_cast<uint8_t>(audio.energy64fScaled) >> 1);
+                targetScale = 100 + (static_cast<uint8_t>(Audio.energy64fScaled) >> 1);
             }
         }
 
@@ -214,7 +212,7 @@ class MorphingShapesPattern final : public Pattern
             }
         }
 
-        const uint16_t rotDelta = rotationSpeed + (static_cast<uint8_t>(audio.energy64f) << 1);
+        const uint16_t rotDelta = rotationSpeed + (static_cast<uint8_t>(Audio.energy64f) << 1);
         rotation += rotDelta;
 
         if (scale < targetScale)
@@ -232,23 +230,23 @@ class MorphingShapesPattern final : public Pattern
 
         for (uint8_t i = 0; i < 8; i++)
         {
-            const uint8_t freqHeight = audio.heights8[i * 8];
+            const uint8_t freqHeight = Audio.heights8[i * 8];
             const uint16_t angle = (i * 65536 / 8) + rotation;
             const int16_t x = MATRIX_CENTER_X + ((cos16(angle) >> 8) * 20 >> 8);
             const int16_t y = MATRIX_CENTER_Y + ((sin16(angle) >> 8) * 20 >> 8);
 
             const uint8_t miniScale = 32 + (freqHeight >> 1);
-            drawShape(currentShape, numVertices, x << 8, y << 8, audio.energy8Scaled, miniScale, rotation * 2);
+            drawShape(currentShape, numVertices, x << 8, y << 8, Audio.energy8Scaled, miniScale, rotation * 2);
         }
 
-        randomKaleidoscope(kaleidoscopeMode);
-        if (audio.totalBeats % 3 == 0)
+        Gfx.randomKaleidoscope(kaleidoscopeMode);
+        if (Audio.totalBeats % 3 == 0)
         {
-            kaleidoscope2();
+            Gfx.kaleidoscope2();
         }
         else
         {
-            kaleidoscope1();
+            Gfx.kaleidoscope1();
         }
     }
 };

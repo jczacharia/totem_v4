@@ -64,10 +64,10 @@ class JuliaFractalPattern final : public Pattern
     }
 
   public:
-    static constexpr auto ID = "JuliaFractal";
+    static constexpr auto ID = "Julia Fractal";
 
-    explicit JuliaFractalPattern(MatrixLeds &leds, MatrixNoise &noise, AudioContext &audio)
-        : Pattern(ID, leds, noise, audio)
+    explicit JuliaFractalPattern()
+        : Pattern(ID)
     {
     }
 
@@ -84,17 +84,17 @@ class JuliaFractalPattern final : public Pattern
 
     void render() override
     {
-        if (audio.isBeat)
+        if (Audio.isBeat)
         {
-            if (audio.totalBeats % 4 == 0)
+            if (Audio.totalBeats % 4 == 0)
             {
                 randomize();
                 previousParams = currentParams;
-                float energyBasedZoomFactor = beatZoomFactor + (audio.energy8 / 255) * beatZoomEnergySensitivity;
+                float energyBasedZoomFactor = beatZoomFactor + (Audio.energy8 / 255) * beatZoomEnergySensitivity;
                 energyBasedZoomFactor = constrain(energyBasedZoomFactor, 0.1f, 0.9f);
                 currentParams.zoom *= energyBasedZoomFactor;
                 currentParams.zoom = max(currentParams.zoom, 0.5f);
-                rotationSpeedSensitivity = random8(1, (audio.totalBeats % 4) + 1) / 10.0f;
+                rotationSpeedSensitivity = random8(1, (Audio.totalBeats % 4) + 1) / 10.0f;
                 rotationSpeedSensitivity *= random8(0, 2) == 0 ? -1.0f : 1.0f;
                 framesSinceBeat = 0;
             }
@@ -119,11 +119,11 @@ class JuliaFractalPattern final : public Pattern
         currentParams.colorSpeed = lerp(previousParams.colorSpeed, targetParams.colorSpeed, morphProgress);
         currentParams.hueCycling = (morphProgress < 0.5f) ? previousParams.hueCycling : targetParams.hueCycling;
 
-        const float noiseFactor = static_cast<float>(audio.energy8) / 511.0f;
+        const float noiseFactor = static_cast<float>(Audio.energy8) / 511.0f;
         currentParams.juliaCX = baseJuliaCX + noiseFactor;
         currentParams.juliaCY = baseJuliaCY + noiseFactor;
 
-        const float energyNormalized = static_cast<float>(audio.energy8) / 255.0f;
+        const float energyNormalized = static_cast<float>(Audio.energy8) / 255.0f;
         currentAngle_rad += energyNormalized * rotationSpeedSensitivity;
         if (currentAngle_rad > TWO_PI)
         {
@@ -170,7 +170,7 @@ class JuliaFractalPattern final : public Pattern
                     const uint8_t pixelHue = currentParams.hue + static_cast<uint8_t>(iter * currentParams.colorSpeed);
                     constexpr uint8_t saturation = 255;
                     const uint8_t brightness = map(iter, 0, currentParams.maxIterations, 60, 255);
-                    leds(x_pixel, y_pixel) += CHSV(pixelHue, saturation, brightness);
+                    Gfx(x_pixel, y_pixel) += CHSV(pixelHue, saturation, brightness);
                 }
             }
         }
@@ -181,19 +181,19 @@ class JuliaFractalPattern final : public Pattern
             hue_ms_global = millis();
         }
 
-        if (audio.totalBeats % 8 == 0)
+        if (Audio.totalBeats % 8 == 0)
         {
-            kaleidoscope1();
-            if (audio.energy8 > 200)
-                kaleidoscope3();
-            kaleidoscope2();
+            Gfx.kaleidoscope1();
+            if (Audio.energy8 > 200)
+                Gfx.kaleidoscope3();
+            Gfx.kaleidoscope2();
         }
-        else if (audio.totalBeats % 4 == 0)
+        else if (Audio.totalBeats % 4 == 0)
         {
-            kaleidoscope3();
-            if (audio.energy8 > 200)
-                kaleidoscope1();
-            kaleidoscope2();
+            Gfx.kaleidoscope3();
+            if (Audio.energy8 > 200)
+                Gfx.kaleidoscope1();
+            Gfx.kaleidoscope2();
         }
     }
 };

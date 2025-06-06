@@ -26,10 +26,10 @@ class Audio2dGridPattern : public Pattern
     }
 
   public:
-    static constexpr auto ID = "Audio2dGrid";
+    static constexpr auto ID = "2D Grid";
 
-    explicit Audio2dGridPattern(MatrixLeds &leds, MatrixNoise &noise, AudioContext &audio)
-        : Pattern(ID, leds, noise, audio)
+    Audio2dGridPattern()
+        : Pattern(ID)
     {
     }
 
@@ -46,8 +46,6 @@ class Audio2dGridPattern : public Pattern
     // --------------------- draw frame -------------------------
     void render() override
     {
-        leds.dim(150);
-
         int x, y;
         byte aud;
 
@@ -58,10 +56,10 @@ class Audio2dGridPattern : public Pattern
             for (int i = 0; i < 120; i++)
             {
 
-                aud = audio.heights8[(MATRIX_WIDTH - 1) * i / 119] / 32;
-                drawLine(x, y, x, y - aud, ColorFromPalette(palette, hue + (i * 2)));
+                aud = Audio.heights8[(MATRIX_WIDTH - 1) * i / 119] / 32;
+                Gfx.drawLine(x, y, x, y - aud, ColorFromPalette(palette, hue + (i * 2)));
                 if (drawDoubleVerticalLines)
-                    drawLine(x + 1, y, x + 1, y - aud, ColorFromPalette(palette, hue + (i * 2)));
+                    Gfx.drawLine(x + 1, y, x + 1, y - aud, ColorFromPalette(palette, hue + (i * 2)));
 
                 x = x + 4;
                 if (x > MATRIX_WIDTH - 1)
@@ -78,10 +76,10 @@ class Audio2dGridPattern : public Pattern
             for (int i = 0; i < 120; i++)
             {
 
-                aud = audio.heights8[(MATRIX_WIDTH - 1) * i / 119] / 32;
-                drawLine(x, y, x + aud, y, ColorFromPalette(palette, hue + (i * 2)));
+                aud = Audio.heights8[(MATRIX_WIDTH - 1) * i / 119] / 32;
+                Gfx.drawLine(x, y, x + aud, y, ColorFromPalette(palette, hue + (i * 2)));
                 if (drawDoubleHorizontalLines)
-                    drawLine(x, y + 1, x + aud, y + 1, ColorFromPalette(palette, hue + (i * 2)));
+                    Gfx.drawLine(x, y + 1, x + aud, y + 1, ColorFromPalette(palette, hue + (i * 2)));
 
                 y = y + 4;
                 if (y > MATRIX_HEIGHT - 1)
@@ -97,12 +95,12 @@ class Audio2dGridPattern : public Pattern
             y = 10;
             for (int i = 0; i < 120; i++)
             {
-                aud = audio.heights8[(MATRIX_WIDTH - 1) * i / 119] / 32;
-                drawLine(x, y, x + aud, y - aud, ColorFromPalette(palette, hue + (i * 2)));
+                aud = Audio.heights8[(MATRIX_WIDTH - 1) * i / 119] / 32;
+                Gfx.drawLine(x, y, x + aud, y - aud, ColorFromPalette(palette, hue + (i * 2)));
                 if (drawDoubleDiagonalLines1)
-                    drawLine(x, y + 1, x + aud, y - aud + 1, ColorFromPalette(palette, hue + (i * 2)));
+                    Gfx.drawLine(x, y + 1, x + aud, y - aud + 1, ColorFromPalette(palette, hue + (i * 2)));
                 if (drawDoubleDiagonalLines2)
-                    drawLine(x + 1, y + 1, x + aud + 1, y - aud + 1, ColorFromPalette(palette, hue + (i * 2)));
+                    Gfx.drawLine(x + 1, y + 1, x + aud + 1, y - aud + 1, ColorFromPalette(palette, hue + (i * 2)));
 
                 x = x + 4;
                 if (x > MATRIX_WIDTH - 1)

@@ -17,14 +17,14 @@ class SpectrumCirclePattern final : public Pattern
     int spin_factor = 0;
     bool spinDir = false;
     bool kaleidoscope = false;
-    uint8_t kaleidoscopeEffect = 0;
+    uint8_t kaleidoscopeMode = 0;
     CRGBPalette16 palette = randomPalette();
 
   public:
-    static constexpr auto ID = "SpectrumCircle";
+    static constexpr auto ID = "Spectrum Circle";
 
-    SpectrumCirclePattern(MatrixLeds &leds, MatrixNoise &noise, AudioContext &audio)
-        : Pattern(ID, leds, noise, audio)
+    SpectrumCirclePattern()
+        : Pattern(ID)
     {
     }
 
@@ -42,7 +42,7 @@ class SpectrumCirclePattern final : public Pattern
         }
 
         kaleidoscope = true;
-        kaleidoscopeEffect = random(0, 2);
+        kaleidoscopeMode = random(0, 2);
 
         cycleColors = false;
 
@@ -64,15 +64,14 @@ class SpectrumCirclePattern final : public Pattern
 
     void render() override
     {
-        if (audio.isBeat)
+        if (Audio.isBeat)
         {
-            if (audio.totalBeats % 4 == 0)
+            if (Audio.totalBeats % 4 == 0)
             {
                 start();
             }
         }
 
-        static constexpr uint8_t BINS = MATRIX_WIDTH;
         byte audioData = 0;
 
         constexpr float ratio = 360.0 / BINS;
@@ -81,20 +80,20 @@ class SpectrumCirclePattern final : public Pattern
 
         if (spinDir)
         {
-            spinVal += audio.energy64f / spin_factor;
+            spinVal += Audio.energy64f / spin_factor;
         }
         else
         {
-            spinVal -= audio.energy64f / spin_factor;
+            spinVal -= Audio.energy64f / spin_factor;
         }
 
         spinVal %= 360;
 
-        const uint8_t brightness = audio.isBeat ? 255 : audio.energy8Scaled;
+        const uint8_t brightness = Audio.isBeat ? 255 : Audio.energy8Scaled;
 
         for (int i = 0; i < BINS; i++)
         {
-            audioData = audio.heights8[i] / 6;
+            audioData = Audio.heights8[i] / 6;
             if (constexpr uint8_t maxData = 127; audioData > maxData)
             {
                 audioData = maxData;
@@ -115,39 +114,39 @@ class SpectrumCirclePattern final : public Pattern
             angle = rotation * 3.14 / 180;
             const int x = static_cast<int>(canvasCentreX + audioData * cos(angle));
             const int y = static_cast<int>(canvasCentreY + audioData * sin(angle));
-            drawLine(canvasCentreX, canvasCentreY, x, y, ColorFromPalette(palette, i * 3, brightness));
+            Gfx.drawLine(canvasCentreX, canvasCentreY, x, y, ColorFromPalette(palette, i * 3, brightness));
 
-            if (audio.isBeat)
+            if (Audio.isBeat)
             {
-                leds(x, y) = CRGB::White;
+                Gfx(x, y) = CRGB::White;
             }
         }
 
-        switch (kaleidoscopeEffect)
+        switch (kaleidoscopeMode)
         {
             case 0:
-                kaleidoscope3();
-                spiralStream(31, 31, 64, brightness);
-                if (audio.totalBeats % 3 == 0)
+                Gfx.kaleidoscope3();
+                Gfx.spiralStream(31, 31, 64, brightness);
+                if (Audio.totalBeats % 3 == 0)
                 {
-                    kaleidoscope2();
+                    Gfx.kaleidoscope2();
                 }
                 else
                 {
-                    kaleidoscope1();
+                    Gfx.kaleidoscope1();
                 }
                 break;
             case 1:
-                kaleidoscope3();
-                if (audio.totalBeats % 3 == 0)
+                Gfx.kaleidoscope3();
+                if (Audio.totalBeats % 3 == 0)
                 {
-                    kaleidoscope2();
+                    Gfx.kaleidoscope2();
                 }
                 else
                 {
-                    kaleidoscope1();
+                    Gfx.kaleidoscope1();
                 }
-                spiralStream(31, 31, 64, brightness);
+                Gfx.spiralStream(31, 31, 64, brightness);
                 break;
             default: break;
         }

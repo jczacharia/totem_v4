@@ -30,10 +30,10 @@ class AudioDotsSinglePattern : public Pattern
     CRGBPalette16 palette = randomPalette();
 
   public:
-    static constexpr auto ID = "AudioDotsSingle";
+    static constexpr auto ID = "Dots";
 
-    explicit AudioDotsSinglePattern(MatrixLeds &leds, MatrixNoise &noise, AudioContext &audio)
-        : Pattern(ID, leds, noise, audio)
+    explicit AudioDotsSinglePattern()
+        : Pattern(ID)
     {
     }
 
@@ -70,14 +70,14 @@ class AudioDotsSinglePattern : public Pattern
     {
 
         // if we are going to dim all, then do it gradually
-        leds.dim(dimVal);
+        Gfx.dim(dimVal);
         if (dimVal > dimEnd)
             dimVal--;
         // effects.DimAll(128);
 
         for (byte i = 0; i < MATRIX_WIDTH; i++)
         {
-            uint8_t data1 = audio.heights8[i] / audioScale;
+            uint8_t data1 = Audio.heights8[i] / audioScale;
             if (data1 > MATRIX_CENTER_Y - 1)
                 data1 = MATRIX_CENTER_Y - 1;
 
@@ -95,33 +95,33 @@ class AudioDotsSinglePattern : public Pattern
             {
                 if (upwards)
                 {
-                    drawPixel(y0, x0, color1);
-                    drawPixel(MATRIX_WIDTH - y0, x0, color1);
+                    Gfx.drawPixel(y0, x0, color1);
+                    Gfx.drawPixel(MATRIX_WIDTH - y0, x0, color1);
                 }
                 else
                 {
-                    drawPixel(y0, MATRIX_HEIGHT - x0, color1);
-                    drawPixel(MATRIX_WIDTH - y0, MATRIX_HEIGHT - x0, color1);
+                    Gfx.drawPixel(y0, MATRIX_HEIGHT - x0, color1);
+                    Gfx.drawPixel(MATRIX_WIDTH - y0, MATRIX_HEIGHT - x0, color1);
                 }
             }
             else
             {
                 if (upwards)
                 {
-                    drawPixel(x0, MATRIX_CENTER_Y - y0, color1);
-                    drawPixel(x0, MATRIX_CENTER_Y + y0, color1);
+                    Gfx.drawPixel(x0, MATRIX_CENTER_Y - y0, color1);
+                    Gfx.drawPixel(x0, MATRIX_CENTER_Y + y0, color1);
                 }
                 else
                 {
-                    drawPixel(x0, y0, color1);
-                    drawPixel(x0, MATRIX_HEIGHT - y0, color1);
+                    Gfx.drawPixel(x0, y0, color1);
+                    Gfx.drawPixel(x0, MATRIX_HEIGHT - y0, color1);
                 }
             }
         }
 
         if (caleido)
         {
-            randomKaleidoscope(caleidoEffect);
+            Gfx.randomKaleidoscope(caleidoEffect);
         }
 
         // roll the display sideways one more pixel

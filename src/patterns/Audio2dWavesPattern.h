@@ -19,10 +19,10 @@ class Audio2dWavesPattern final : public Pattern
     CRGBPalette16 palette = randomPalette();
 
   public:
-    static constexpr auto ID = "Audio2dWaves";
+    static constexpr auto ID = "2D Waves";
 
-    explicit Audio2dWavesPattern(MatrixLeds &leds, MatrixNoise &noise, AudioContext &audio)
-        : Pattern(ID, leds, noise, audio)
+    Audio2dWavesPattern()
+        : Pattern(ID)
     {
     }
 
@@ -64,7 +64,7 @@ class Audio2dWavesPattern final : public Pattern
         int aud;
         int oldaud = 0;
 
-        leds.dim(150);
+        Gfx.dim(150);
 
         x = 0;
         y = 8;
@@ -72,8 +72,8 @@ class Audio2dWavesPattern final : public Pattern
         {
             if (x != 0)
             {
-                aud = direction * (audio.heights8[(MATRIX_WIDTH - 1) * i / 127] / 16);
-                drawLine(oldx, oldy, x, y - aud, ColorFromPalette(palette, hue + (i * 2)));
+                aud = direction * (Audio.heights8[(MATRIX_WIDTH - 1) * i / 127] / 16);
+                Gfx.drawLine(oldx, oldy, x, y - aud, ColorFromPalette(palette, hue + (i * 2)));
                 oldx = x;
                 oldy = y - aud;
             }

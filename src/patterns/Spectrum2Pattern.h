@@ -7,7 +7,7 @@ class Spectrum2Pattern final : public Pattern
     uint8_t mirrorDim = 0;
     bool useCurrentPalette = false;
     uint8_t colorSpread = 0;
-    uint8_t kaleidoscopeEffect = 0;
+    uint8_t kaleidoscopeMode = 0;
     CRGBPalette16 palette = randomPalette();
 
     void randomize()
@@ -16,14 +16,14 @@ class Spectrum2Pattern final : public Pattern
         mirrorDim = 255;
         useCurrentPalette = true;
         colorSpread = 7;
-        kaleidoscopeEffect = random8(1, KALEIDOSCOPE_COUNT + 1);
+        kaleidoscopeMode = random8(1, KALEIDOSCOPE_COUNT + 1);
     }
 
   public:
-    static constexpr auto ID = "Spectrum2";
+    static constexpr auto ID = "Spectrum 2";
 
-    explicit Spectrum2Pattern(MatrixLeds &leds, MatrixNoise &noise, AudioContext &audio)
-        : Pattern(ID, leds, noise, audio)
+    explicit Spectrum2Pattern()
+        : Pattern(ID)
     {
     }
 
@@ -35,9 +35,9 @@ class Spectrum2Pattern final : public Pattern
 
     void render() override
     {
-        if (audio.isBeat)
+        if (Audio.isBeat)
         {
-            if (audio.totalBeats % 4 == 0)
+            if (Audio.totalBeats % 4 == 0)
             {
                 randomize();
             }
@@ -45,7 +45,7 @@ class Spectrum2Pattern final : public Pattern
 
         for (uint i = 0; i < MATRIX_WIDTH / 2; i++)
         {
-            const uint8_t data = audio.heights8[2 * i] >> 2;
+            const uint8_t data = Audio.heights8[2 * i] >> 2;
             x1 = i;
             x2 = i;
             y1 = MATRIX_HEIGHT - 1;
@@ -59,10 +59,10 @@ class Spectrum2Pattern final : public Pattern
             {
                 if (useCurrentPalette)
                 {
-                    drawLine(x1, y1, x2, y2, ColorFromPalette(palette, i * colorSpread, audio.energy8Scaled));
+                    Gfx.drawLine(x1, y1, x2, y2, ColorFromPalette(palette, i * colorSpread, Audio.energy8Scaled));
                     if (mirror)
                     {
-                        drawLine(
+                        Gfx.drawLine(
                             MATRIX_WIDTH - x1 - 1,
                             y1,
                             MATRIX_WIDTH - x2 - 1,
@@ -72,10 +72,10 @@ class Spectrum2Pattern final : public Pattern
                 }
                 else
                 {
-                    drawLine(x1, y1, x2, y2, ColorFromPalette(palette, 16, audio.energy8Scaled));
+                    Gfx.drawLine(x1, y1, x2, y2, ColorFromPalette(palette, 16, Audio.energy8Scaled));
                     if (mirror)
                     {
-                        drawLine(
+                        Gfx.drawLine(
                             MATRIX_WIDTH - x1 - 1,
                             y1,
                             MATRIX_WIDTH - x2 - 1,
@@ -86,15 +86,15 @@ class Spectrum2Pattern final : public Pattern
             }
         }
 
-        if (audio.totalBeats % 3 == 0)
+        if (Audio.totalBeats % 3 == 0)
         {
-            randomKaleidoscope(kaleidoscopeEffect);
-            kaleidoscope2();
+            Gfx.randomKaleidoscope(kaleidoscopeMode);
+            Gfx.kaleidoscope2();
         }
         else
         {
-            kaleidoscope1();
-            kaleidoscope2();
+            Gfx.kaleidoscope2();
+            Gfx.kaleidoscope1();
         }
     }
 };

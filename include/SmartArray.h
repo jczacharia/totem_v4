@@ -55,11 +55,6 @@ class SmartArray
         return data_[xy(x, y)];
     }
 
-    // T operator()(const size_t x, const size_t y) const
-    // {
-    //     return data_[xy(x, y)];
-    // }
-
     void fill(const T &fillVal)
     {
         data_.fill(fillVal);

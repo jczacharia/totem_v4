@@ -11,9 +11,9 @@ class AudioSpectrumPattern final : public Pattern
     bool animationDirectionForward_ = true;
 
   public:
-    static constexpr auto ID = "AudioSpectrum";
+    static constexpr auto ID = "Audio Spectrum";
 
-    explicit AudioSpectrumPattern()
+    AudioSpectrumPattern()
         : Pattern(ID)
     {
     }
@@ -50,20 +50,20 @@ class AudioSpectrumPattern final : public Pattern
 
         for (uint8_t x = 0; x < MATRIX_WIDTH; ++x)
         {
-            const uint8_t height = MATRIX_HEIGHT * audio.heights8[x] / 255;
-            const uint8_t peakHeight = MATRIX_HEIGHT * audio.peaks8[x] / 255;
+            const uint8_t height = MATRIX_HEIGHT * Audio.heights8[x] / 255;
+            const uint8_t peakHeight = MATRIX_HEIGHT * Audio.peaks8[x] / 255;
 
             for (uint8_t y = 0; y < height; ++y)
             {
                 const uint8_t norm = 255 * y / (MATRIX_HEIGHT - 1);
                 const uint8_t bottom_hue = lerp8by8(HUE_GREEN, HUE_PINK, animationPhase);
                 const uint8_t hue = lerp8by8(bottom_hue, HUE_RED, norm);
-                leds.drawPixel(x, MATRIX_HEIGHT - 1 - y, CHSV(hue, 255, 255));
+                Gfx.drawPixel(x, MATRIX_HEIGHT - 1 - y, CHSV(hue, 255, 255));
             }
 
             if (peakHeight > 0)
             {
-                leds.drawPixel(x, MATRIX_HEIGHT - 1 - peakHeight, CRGB(255, 255, 255));
+                Gfx.drawPixel(x, MATRIX_HEIGHT - 1 - peakHeight, CRGB(255, 255, 255));
             }
         }
     }

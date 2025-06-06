@@ -15,8 +15,8 @@
 
 struct AudioContext
 {
-    std::array<uint8_t, MATRIX_WIDTH> heights8;
-    std::array<uint8_t, MATRIX_WIDTH> peaks8;
+    std::array<uint8_t, BINS> heights8;
+    std::array<uint8_t, BINS> peaks8;
     uint16_t bpm;
     bool isBeat;
     uint32_t totalBeats;
@@ -28,6 +28,26 @@ struct AudioContext
     float energy64fPeaksScaled;
     uint8_t energy8Peaks;
     uint8_t energy8PeaksScaled;
+
+    uint8_t avgHeights8Range(uint8_t low, uint8_t high) const
+    {
+        low = max<uint8_t>(low, 0);
+        high = min<uint8_t>(high, BINS - 1);
+        uint16_t sum = 0;
+        for (uint8_t i = low; i < high; ++i)
+            sum += heights8[i];
+        return sum / (high - low);
+    }
+
+    uint8_t avgPeaks8Range(uint8_t low, uint8_t high) const
+    {
+        low = max<uint8_t>(low, 0);
+        high = min<uint8_t>(high, BINS - 1);
+        uint16_t sum = 0;
+        for (uint8_t i = low; i < high; ++i)
+            sum += peaks8[i];
+        return sum / (high - low);
+    }
 };
 
 class Microphone final
@@ -62,12 +82,12 @@ class Microphone final
     std::atomic<uint32_t> processingTimeUs_{0};
     std::atomic<uint32_t> micLastUpdateCount_{0};
 
-    std::array<float, MATRIX_WIDTH> lastSpectrum_{};
-    std::array<float, MATRIX_WIDTH> peakLevels_{};
-    std::array<float, MATRIX_WIDTH> peakHoldCounters_{};
-    std::array<float, MATRIX_WIDTH> bandMaxHistory_{};
-    std::array<float, MATRIX_WIDTH> heightsBuffer_[2]{};
-    std::array<float, MATRIX_WIDTH> peaksBuffer_[2]{};
+    std::array<float, BINS> lastSpectrum_{};
+    std::array<float, BINS> peakLevels_{};
+    std::array<float, BINS> peakHoldCounters_{};
+    std::array<float, BINS> bandMaxHistory_{};
+    std::array<float, BINS> heightsBuffer_[2]{};
+    std::array<float, BINS> peaksBuffer_[2]{};
     float energy_[2] = {0.0f, 0.0f};
     float energyPeaks_[2] = {0.0f, 0.0f};
 
@@ -94,13 +114,12 @@ class Microphone final
         const auto &heights64f = heightsBuffer_[current_buffer];
         const auto &peaks64f = peaksBuffer_[current_buffer];
 
-        std::array<uint8_t, MATRIX_WIDTH> heights8{};
+        std::array<uint8_t, BINS> heights8{};
         std::ranges::transform(
             heights64f, heights8.begin(), [](const float x) -> uint8_t { return 255.0f * x / 63.0f; });
 
-        std::array<uint8_t, MATRIX_WIDTH> peaks8{};
-        std::ranges::transform(
-            peaks64f, peaks8.begin(), [](const float x) -> uint8_t { return 255.0f * x / 63.0f; });
+        std::array<uint8_t, BINS> peaks8{};
+        std::ranges::transform(peaks64f, peaks8.begin(), [](const float x) -> uint8_t { return 255.0f * x / 63.0f; });
 
         beatDetector_.update(heights64f);
         const bool isBeat = beatDetector_.isBeatDetected();
@@ -202,8 +221,7 @@ class Microphone final
         static constexpr size_t FFT_THREAD_STACK_SIZE = 8192;
         static constexpr int FFT_THREAD_PRIORITY = 5; // Lower number = higher priority
 
-        processingThread_ =
-            new ThreadManager("MicFFT", FFT_THREAD_CORE, FFT_THREAD_STACK_SIZE, FFT_THREAD_PRIORITY);
+        processingThread_ = new ThreadManager("MicFFT", FFT_THREAD_CORE, FFT_THREAD_STACK_SIZE, FFT_THREAD_PRIORITY);
 
         processingThread_->start([this](const std::atomic<bool> &running) { processingThreadFunc(running); });
         threadInitialized_.store(true);
@@ -252,10 +270,7 @@ class Microphone final
         fft_recursive_impl(x.data(), N, scratch.data());
     }
 
-    static void fft_recursive_impl(
-        std::complex<float> *x_data,
-        const size_t N,
-        std::complex<float> *scratch_data)
+    static void fft_recursive_impl(std::complex<float> *x_data, const size_t N, std::complex<float> *scratch_data)
     {
         if (N <= 1)
             return;
@@ -286,9 +301,9 @@ class Microphone final
     {
         std::vector<std::complex<float>> fft_input(BUFFER_SIZE);
         std::array<int32_t, BUFFER_SIZE> local_buffer{};
-        std::array<float, MATRIX_WIDTH> local_spectrum{};
-        std::array<float, MATRIX_WIDTH> local_heights{};
-        std::array<float, MATRIX_WIDTH> local_peaks{};
+        std::array<float, BINS> local_spectrum{};
+        std::array<float, BINS> local_heights{};
+        std::array<float, BINS> local_peaks{};
 
         Serial.printf("FFT processing thread started on core %d\n", xPortGetCoreID());
 
@@ -340,8 +355,7 @@ class Microphone final
             // Prepare FFT input with window function
             for (size_t i = 0; i < BUFFER_SIZE; ++i)
             {
-                const float cos_res =
-                    cosf(2.0f * M_PI * static_cast<float>(i) / static_cast<float>(BUFFER_SIZE - 1));
+                const float cos_res = cosf(2.0f * M_PI * static_cast<float>(i) / static_cast<float>(BUFFER_SIZE - 1));
                 const float window_val = 0.5f * (1.0f - cos_res);
                 const float sample_float = static_cast<float>(local_buffer[i] >> 16) / 32768.0f;
                 fft_input[i] = std::complex(sample_float * window_val, 0.0f);
@@ -353,7 +367,7 @@ class Microphone final
             float energy = 0;
 
             // Calculate magnitude spectrum
-            for (size_t i = 0; i < MATRIX_WIDTH; ++i)
+            for (size_t i = 0; i < BINS; ++i)
             {
                 const float real_part = fft_input[i].real();
                 const float imag_part = fft_input[i].imag();
@@ -369,11 +383,11 @@ class Microphone final
                 local_spectrum[i] = local_spectrum[i] / normFactor;
 
                 // Scale to matrix height
-                local_spectrum[i] *= (MATRIX_WIDTH - 1);
+                local_spectrum[i] *= (BINS - 1);
                 energy += local_spectrum[i];
             }
 
-            energy /= (MATRIX_WIDTH - 1);
+            energy /= (BINS - 1);
             dynAttack_ = 1.0f + energy * ENERGY_ATTACK_FACTOR;
             dynDecay_ = 1.0f - energy * ENERGY_DECAY_FACTOR;
             dynAttack_ = std::min(std::max(dynAttack_, ENERGY_ATTACK_MIN), ENERGY_ATTACK_MAX);
@@ -382,7 +396,7 @@ class Microphone final
             energy = 0;
             float energyPeaks = 0;
 
-            for (uint8_t x = 0; x < MATRIX_WIDTH; ++x)
+            for (uint8_t x = 0; x < BINS; ++x)
             {
                 if (const float currentValue = local_spectrum[x]; currentValue > lastSpectrum_[x])
                 {
@@ -410,14 +424,14 @@ class Microphone final
                     }
                 }
 
-                local_heights[x] = std::min(lastSpectrum_[x], static_cast<float>(MATRIX_WIDTH));
+                local_heights[x] = std::min(lastSpectrum_[x], static_cast<float>(BINS));
                 energy += local_heights[x];
-                local_peaks[x] = std::min(peakLevels_[x], static_cast<float>(MATRIX_WIDTH - 1));
+                local_peaks[x] = std::min(peakLevels_[x], static_cast<float>(BINS - 1));
                 energyPeaks += local_peaks[x];
             }
 
-            energy /= (MATRIX_WIDTH - 1);
-            energyPeaks /= (MATRIX_WIDTH - 1);
+            energy /= (BINS - 1);
+            energyPeaks /= (BINS - 1);
 
             // Track processing time
             processingTimeUs_.store(esp_timer_get_time() - start_time);
@@ -427,10 +441,8 @@ class Microphone final
             const uint8_t write_buffer = 1 - activeBuffer_.load();
             {
                 std::lock_guard lock(spectrumMutex_);
-                std::memcpy(
-                    heightsBuffer_[write_buffer].data(), local_heights.data(), sizeof(float) * MATRIX_WIDTH);
-                std::memcpy(
-                    peaksBuffer_[write_buffer].data(), local_peaks.data(), sizeof(float) * MATRIX_WIDTH);
+                std::memcpy(heightsBuffer_[write_buffer].data(), local_heights.data(), sizeof(float) * BINS);
+                std::memcpy(peaksBuffer_[write_buffer].data(), local_peaks.data(), sizeof(float) * BINS);
                 energy_[write_buffer] = energy;
                 energyPeaks_[write_buffer] = energyPeaks;
             }

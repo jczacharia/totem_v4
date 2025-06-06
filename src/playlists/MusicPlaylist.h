@@ -9,10 +9,21 @@ class MusicPlaylist final : public Pattern
 {
     std::vector<std::string> backgrounds{
         AuroraDropPattern::ID,
+        LifePattern::ID,
+        Mandala2Pattern::ID,
         MandalaPattern::ID,
+        MunchPattern::ID,
+        PlasmaPattern::ID,
+        RorschachPattern::ID,
+        SimpleNoisePattern::ID,
     };
     size_t bkgIdx = random8(0, backgrounds.size());
     std::shared_ptr<Pattern> currBkg = Registry::get(backgrounds[bkgIdx]);
+
+    std::vector<uint8_t> waits = {4, 8, 16, 32};
+    uint8_t nextPatternWait = waits[random8(0, waits.size())];
+    uint8_t nextBackgroundWait = waits[random8(0, waits.size())];
+    uint8_t nextForegroundWait = waits[random8(0, waits.size())];
 
     void nextBackground()
     {
@@ -23,24 +34,29 @@ class MusicPlaylist final : public Pattern
     }
 
     std::vector<std::string> patterns{
-        // Audio3dGridPattern::ID,
-        // Audio2dGridPattern::ID,
-        // AudioClassicSpectrum128Pattern::ID,
-        // AudioDotsSinglePattern::ID,
-        // Audio2dWavesPattern::ID,
-        // AudioCubesPattern::ID,
-        // DNAHelixPattern::ID,
-        // MorphingShapesPattern::ID,
-        // JuliaFractalPattern::ID,
-        // Spectrum2Pattern::ID,
-        // SpectrumCirclePattern::ID,
-        // PhyllotaxisFractalPattern::ID,
-        // RotatingSpectrumPattern::ID,
-        AudioTrianglesPattern::ID,
+        Audio8x8SquaresPattern::ID,
+        Audio2dGridPattern::ID,
+        Audio2dWavesPattern::ID,
+        Audio3dGridPattern::ID,
+        AudioClassicSpectrum128Pattern::ID,
+        AudioCubesPattern::ID,
+        AudioDiagonalSpectrumPattern::ID,
+        AudioDotsSinglePattern::ID,
         AudioSpectrumPattern::ID,
+        AudioTrianglesPattern::ID,
+        BigSparkPattern::ID,
+        CirclesPattern::ID,
+        DNAHelixPattern::ID,
+        JuliaFractalPattern::ID,
+        MorphingShapesPattern::ID,
+        PhyllotaxisFractalPattern::ID,
+        RotatingSpectrumPattern::ID,
+        Spectrum2Pattern::ID,
+        SpectrumCirclePattern::ID,
+        SpectrumPeakBarsPattern::ID,
+        TorusPattern::ID,
     };
-    // size_t ptnIdx = random8(0, patterns.size());
-    size_t ptnIdx = 0;
+    size_t ptnIdx = random8(0, patterns.size());
     std::shared_ptr<Pattern> currPtn = Registry::get(patterns[ptnIdx]);
 
     void nextPattern()
@@ -52,7 +68,7 @@ class MusicPlaylist final : public Pattern
     }
 
   public:
-    static constexpr auto ID = "MusicPlaylist";
+    static constexpr auto ID = "Music Mode";
 
     MusicPlaylist()
         : Pattern(ID)
@@ -61,25 +77,33 @@ class MusicPlaylist final : public Pattern
 
     void start() override
     {
-        std::ranges::shuffle(backgrounds, std::random_device());
-        std::ranges::shuffle(patterns, std::random_device());
 
+        std::ranges::shuffle(backgrounds, std::random_device());
         currBkg->start();
+
+        std::ranges::shuffle(patterns, std::random_device());
         currPtn->start();
     }
 
     void render() override
     {
-        if (audio.isBeat)
+        if (Audio.isBeat)
         {
-            if (audio.totalBeats % 16 == 0)
+            if (Audio.totalBeats % nextPatternWait == 0)
             {
+                nextPatternWait = waits[random8(0, waits.size())];
                 nextPattern();
+            }
+
+            if (Audio.totalBeats % nextBackgroundWait == 0)
+            {
+                nextBackgroundWait = waits[random8(0, waits.size())];
                 nextBackground();
             }
         }
 
         currBkg->render();
+        currBkg->backgroundPostProcess();
         currPtn->render();
     }
 };

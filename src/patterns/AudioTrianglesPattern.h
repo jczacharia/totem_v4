@@ -9,9 +9,6 @@ class AudioTrianglesPattern final : public Pattern
     uint8_t color5 = 0;
     uint8_t color6 = 0;
 
-    uint8_t kaleidoscopeMode = 0;
-    CRGBPalette16 palette = randomPalette();
-
     void randomize()
     {
         color1 = random8();
@@ -24,9 +21,9 @@ class AudioTrianglesPattern final : public Pattern
     }
 
   public:
-    static constexpr auto ID = "AudioTriangles";
+    static constexpr auto ID = "Triangles";
 
-    explicit AudioTrianglesPattern()
+    AudioTrianglesPattern()
         : Pattern(ID)
     {
     }
@@ -39,7 +36,7 @@ class AudioTrianglesPattern final : public Pattern
 
     void render() override
     {
-        if (audio.isBeat)
+        if (Audio.isBeat)
         {
             randomize();
         }
@@ -51,42 +48,42 @@ class AudioTrianglesPattern final : public Pattern
         color5++;
         color6++;
 
-        uint8_t x1 = audio.heights8[10] >> 3;
-        uint8_t y1 = audio.heights8[20] >> 3;
-        uint8_t x2 = audio.heights8[30] >> 3;
-        uint8_t y2 = audio.heights8[40] >> 3;
-        uint8_t x3 = audio.heights8[50] >> 3;
-        uint8_t y3 = audio.heights8[60] >> 3;
+        uint8_t x1 = Audio.heights8[10] >> 3;
+        uint8_t y1 = Audio.heights8[20] >> 3;
+        uint8_t x2 = Audio.heights8[30] >> 3;
+        uint8_t y2 = Audio.heights8[40] >> 3;
+        uint8_t x3 = Audio.heights8[50] >> 3;
+        uint8_t y3 = Audio.heights8[60] >> 3;
 
-        leds.drawLine(x1, y1, x2, y2, ColorFromPalette(palette, color1));
-        leds.drawLine(x2, y2, x3, y3, ColorFromPalette(palette, color2));
-        leds.drawLine(x3, y3, x1, y1, ColorFromPalette(palette, color3));
+        Gfx.drawLine(x1, y1, x2, y2, ColorFromPalette(palette, color1));
+        Gfx.drawLine(x2, y2, x3, y3, ColorFromPalette(palette, color2));
+        Gfx.drawLine(x3, y3, x1, y1, ColorFromPalette(palette, color3));
 
-        x1 = audio.heights8[13] >> 3;
-        y1 = audio.heights8[23] >> 3;
-        x2 = audio.heights8[33] >> 3;
-        y2 = audio.heights8[43] >> 3;
-        x3 = audio.heights8[53] >> 3;
-        y3 = audio.heights8[63] >> 3;
+        x1 = Audio.heights8[13] >> 3;
+        y1 = Audio.heights8[23] >> 3;
+        x2 = Audio.heights8[33] >> 3;
+        y2 = Audio.heights8[43] >> 3;
+        x3 = Audio.heights8[53] >> 3;
+        y3 = Audio.heights8[63] >> 3;
 
-        leds.drawLine(x1, y1, x2, y2, ColorFromPalette(palette, color4));
-        leds.drawLine(x2, y2, x3, y3, ColorFromPalette(palette, color5));
-        leds.drawLine(x3, y3, x1, y1, ColorFromPalette(palette, color6));
+        Gfx.drawLine(x1, y1, x2, y2, ColorFromPalette(palette, color4));
+        Gfx.drawLine(x2, y2, x3, y3, ColorFromPalette(palette, color5));
+        Gfx.drawLine(x3, y3, x1, y1, ColorFromPalette(palette, color6));
 
         switch (kaleidoscopeMode)
         {
             case 0:
-                leds.kaleidoscope3();
-                leds.kaleidoscope1();
+                Gfx.kaleidoscope3();
+                Gfx.kaleidoscope1();
                 break;
             case 1:
-                leds.kaleidoscope4();
-                leds.kaleidoscope1();
+                Gfx.kaleidoscope4();
+                Gfx.kaleidoscope1();
                 break;
-            case 2: leds.kaleidoscope2(); break;
+            case 2: Gfx.kaleidoscope2(); break;
             default:
-                leds.randomKaleidoscope(random8(1, MatrixLeds::KALEIDOSCOPE_COUNT + 1));
-                leds.kaleidoscope2();
+                Gfx.randomKaleidoscope(random8(1, Gfx.KALEIDOSCOPE_COUNT + 1));
+                Gfx.kaleidoscope2();
                 break;
         }
     }
