@@ -57,7 +57,7 @@ class Microphone final
 
     static constexpr float PEAK_HOLD_TIME = 3.0f;
     static constexpr float BAND_NORM_FACTOR = 0.995f;
-    static constexpr float LOG_SCALE_BASE = 8.0f;
+    static constexpr float LOG_SCALE_BASE = 3.0f;
     static constexpr float ENERGY_ATTACK_FACTOR = 10.0f;
     static constexpr float ENERGY_ATTACK_MIN = 0.2f;
     static constexpr float ENERGY_ATTACK_MAX = 0.9f;
@@ -383,11 +383,11 @@ class Microphone final
                 local_spectrum[i] = local_spectrum[i] / normFactor;
 
                 // Scale to matrix height
-                local_spectrum[i] *= (BINS - 1);
+                local_spectrum[i] *= BINS - 1;
                 energy += local_spectrum[i];
             }
 
-            energy /= (BINS - 1);
+            energy /= BINS;
             dynAttack_ = 1.0f + energy * ENERGY_ATTACK_FACTOR;
             dynDecay_ = 1.0f - energy * ENERGY_DECAY_FACTOR;
             dynAttack_ = std::min(std::max(dynAttack_, ENERGY_ATTACK_MIN), ENERGY_ATTACK_MAX);
@@ -426,12 +426,12 @@ class Microphone final
 
                 local_heights[x] = std::min(lastSpectrum_[x], static_cast<float>(BINS));
                 energy += local_heights[x];
-                local_peaks[x] = std::min(peakLevels_[x], static_cast<float>(BINS - 1));
+                local_peaks[x] = std::min(peakLevels_[x], static_cast<float>(BINS));
                 energyPeaks += local_peaks[x];
             }
 
-            energy /= (BINS - 1);
-            energyPeaks /= (BINS - 1);
+            energy /= BINS;
+            energyPeaks /= BINS;
 
             // Track processing time
             processingTimeUs_.store(esp_timer_get_time() - start_time);

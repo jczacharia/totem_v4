@@ -77,8 +77,8 @@ class DNAHelixPattern final : public Pattern
         }
 
         helixRotation += Audio.bpm / 60.0f * 0.05f;
-        waveOffset += Audio.energy8Peaks * 0.005f;
-        waveAmplitude = Audio.energy8Peaks * 0.05f;
+        waveOffset += Audio.energy8Peaks * 0.002f;
+        waveAmplitude = Audio.energy8Peaks * 0.02f;
         baseHue++;
 
         for (uint8_t y = 0; y < MATRIX_HEIGHT; y++)

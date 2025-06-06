@@ -16,6 +16,7 @@ class Spectrum2Pattern final : public Pattern
         mirrorDim = 255;
         useCurrentPalette = true;
         colorSpread = 7;
+        kaleidoscope = random(0, 2);
         kaleidoscopeMode = random8(1, KALEIDOSCOPE_COUNT + 1);
     }
 
@@ -86,15 +87,10 @@ class Spectrum2Pattern final : public Pattern
             }
         }
 
-        if (Audio.totalBeats % 3 == 0)
+        if (kaleidoscope)
         {
             Gfx.randomKaleidoscope(kaleidoscopeMode);
             Gfx.kaleidoscope2();
-        }
-        else
-        {
-            Gfx.kaleidoscope2();
-            Gfx.kaleidoscope1();
         }
     }
 };

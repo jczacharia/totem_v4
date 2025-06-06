@@ -152,20 +152,24 @@ constexpr char index_html[] PROGMEM = R"rawliteral(
         background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
         color: white;
         font-size: 14px;
-        padding: 12px;
+        padding: 10px 18px;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        margin: 0;
+        width: min-content;
+        flex-grow: 1;
       }
       .btn-pattern:active {
         transform: scale(0.98);
         background: linear-gradient(135deg, #5a3a7a 0%, #4a6bb8 100%);
       }
       .patterns-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
+        display: flex;
+        flex-wrap: wrap;
         gap: 6px;
         margin-top: 12px;
+        justify-content: center;
       }
       .loading-text {
         color: #a1a1a1;

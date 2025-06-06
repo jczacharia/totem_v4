@@ -82,8 +82,8 @@ class AudioTrianglesPattern final : public Pattern
                 break;
             case 2: Gfx.kaleidoscope2(); break;
             default:
-                Gfx.randomKaleidoscope(random8(1, Gfx.KALEIDOSCOPE_COUNT + 1));
                 Gfx.kaleidoscope2();
+                Gfx.kaleidoscope1();
                 break;
         }
     }
