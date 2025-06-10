@@ -4,17 +4,12 @@ class Spectrum2Pattern final : public Pattern
 {
     uint8_t x1 = 0, y1 = 0, x2 = 0, y2 = 0;
     bool mirror = false;
-    uint8_t mirrorDim = 0;
-    bool useCurrentPalette = false;
     uint8_t colorSpread = 0;
     uint8_t kaleidoscopeMode = 0;
     CRGBPalette16 palette = randomPalette();
 
     void randomize()
     {
-        mirror = random(0, 2);
-        mirrorDim = 255;
-        useCurrentPalette = true;
         colorSpread = 7;
         kaleidoscope = random(0, 2);
         kaleidoscopeMode = random8(1, KALEIDOSCOPE_COUNT + 1);
@@ -56,41 +51,13 @@ class Spectrum2Pattern final : public Pattern
             y1 = y1 - (space / 2);
             y2 = y2 - (space / 2);
 
-            if (data)
-            {
-                if (useCurrentPalette)
-                {
-                    Gfx.drawLine(x1, y1, x2, y2, ColorFromPalette(palette, i * colorSpread, Audio.energy8Scaled));
-                    if (mirror)
-                    {
-                        Gfx.drawLine(
-                            MATRIX_WIDTH - x1 - 1,
-                            y1,
-                            MATRIX_WIDTH - x2 - 1,
-                            y2,
-                            ColorFromPalette(palette, i * colorSpread, mirrorDim));
-                    }
-                }
-                else
-                {
-                    Gfx.drawLine(x1, y1, x2, y2, ColorFromPalette(palette, 16, Audio.energy8Scaled));
-                    if (mirror)
-                    {
-                        Gfx.drawLine(
-                            MATRIX_WIDTH - x1 - 1,
-                            y1,
-                            MATRIX_WIDTH - x2 - 1,
-                            y2,
-                            ColorFromPalette(palette, 16, mirrorDim));
-                    }
-                }
-            }
-        }
-
-        if (kaleidoscope)
-        {
-            Gfx.randomKaleidoscope(kaleidoscopeMode);
-            Gfx.kaleidoscope2();
+            Gfx.drawLine(x1, y1, x2, y2, ColorFromPalette(palette, i * colorSpread, Audio.energy8Scaled));
+            Gfx.drawLine(
+                MATRIX_WIDTH - x1 - 1,
+                y1,
+                MATRIX_WIDTH - x2 - 1,
+                y2,
+                ColorFromPalette(palette, i * colorSpread, Audio.energy8Scaled));
         }
     }
 };

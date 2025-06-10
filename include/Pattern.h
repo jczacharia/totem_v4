@@ -9,7 +9,6 @@ class Pattern
     std::string id_;
 
   protected:
-    bool linearBlend = false;
     bool kaleidoscope = false;
     uint8_t kaleidoscopeMode = kaleidoscopeMode = random8(1, KALEIDOSCOPE_COUNT + 1);
     CRGBPalette16 palette = randomPalette();

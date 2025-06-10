@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-class AudioClassicSpectrum128Pattern : public Pattern
+class AudioClassicSpectrum128Pattern final : public Pattern
 {
     bool hueCycle = false;
     byte hue = 0;
@@ -31,20 +31,22 @@ class AudioClassicSpectrum128Pattern : public Pattern
     {
         for (byte i = 0; i < MATRIX_WIDTH; i++)
         {
-            Gfx.drawLine(i, 0, i, Audio.peaks8[(MATRIX_WIDTH - 1) - i] / 7, ColorFromPalette(palettePeaks, i * 4));
-            Gfx.drawLine(
-                i, MATRIX_WIDTH - 1, i, MATRIX_HEIGHT - (Audio.peaks8[i] / 7), ColorFromPalette(palettePeaks, i * 4));
-
-            Gfx.drawLine(i, 0, i, Audio.heights8[(MATRIX_WIDTH - 1) - i] / 9, ColorFromPalette(paletteHeights, i * 4));
+            Gfx.drawLine(i, 0, i, Audio.peaks8[(MATRIX_WIDTH - 1) - i] >> 3, ColorFromPalette(palettePeaks, i * 4));
             Gfx.drawLine(
                 i,
                 MATRIX_WIDTH - 1,
                 i,
-                MATRIX_HEIGHT - (Audio.heights8[i] / 9),
+                (MATRIX_HEIGHT - 1) - (Audio.peaks8[i] >> 3),
+                ColorFromPalette(palettePeaks, i * 4));
+
+            Gfx.drawLine(i, 0, i, Audio.heights8[(MATRIX_WIDTH - 1) - i] >> 3, ColorFromPalette(paletteHeights, i * 4));
+            Gfx.drawLine(
+                i,
+                MATRIX_WIDTH - 1,
+                i,
+                (MATRIX_HEIGHT - 1) - (Audio.heights8[i] >> 3),
                 ColorFromPalette(paletteHeights, i * 4));
         }
-
-        // linearBlend = false;
 
         /*
               for (byte i = 0; i < MATRIX_WIDTH; i++)

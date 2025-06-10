@@ -52,7 +52,7 @@ class BeatDetector
         // 3445Hz - 17226Hz
         float current_energy = 0;
 
-        for (size_t i = 10; i < 50; i++)
+        for (size_t i = 1; i < BINS - 1; i++)
         {
             current_energy += spectrum[i];
         }

@@ -52,6 +52,7 @@ struct AudioContext
 
 class Microphone final
 {
+  public:
     static constexpr size_t SAMPLE_RATE = 22050;
     static constexpr size_t BUFFER_SIZE = 512;
 
@@ -65,6 +66,7 @@ class Microphone final
     static constexpr float ENERGY_DECAY_MIN = 0.6f;
     static constexpr float ENERGY_DECAY_MAX = 0.95f;
 
+  private:
     static constexpr gpio_num_t MIC_WS = GPIO_NUM_15;
     static constexpr gpio_num_t MIC_SCK = GPIO_NUM_14;
     static constexpr gpio_num_t MIC_SD = GPIO_NUM_32;

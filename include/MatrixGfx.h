@@ -21,8 +21,6 @@ template <size_t W, size_t H>
 class MatrixGfx final : public SmartArray<CRGB, W, H>, public GFX
 {
   public:
-    bool linearBlend = false;
-
     MatrixGfx()
         : GFX(W, H)
     {
@@ -45,28 +43,12 @@ class MatrixGfx final : public SmartArray<CRGB, W, H>, public GFX
 
     void drawPixel(const int16_t x, const int16_t y, const uint16_t color) override
     {
-        if (linearBlend)
-        {
-            (*this)(x, y) += color;
-        }
-        else
-        {
-
-            (*this)(x, y) = color;
-        }
+        (*this)(x, y) = color;
     }
 
     void drawPixel(const int16_t x, const int16_t y, const CRGB color) override
     {
-        if (linearBlend)
-        {
-            (*this)(x, y) += color;
-        }
-        else
-        {
-
-            (*this)(x, y) = color;
-        }
+        (*this)(x, y) = color;
     }
 
     template <size_t OW, size_t OH>
@@ -103,7 +85,6 @@ class MatrixGfx final : public SmartArray<CRGB, W, H>, public GFX
             blur2d(this->data(), width(), height(), blur);
         }
     }
-
 
     void kaleidoscope1()
     {

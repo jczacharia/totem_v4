@@ -49,6 +49,6 @@ class MandalaPattern final : public Pattern
 
     void backgroundPostProcess() override
     {
-        GfxBkg.dim(40);
+        GfxBkg.dim(25);
     }
 };

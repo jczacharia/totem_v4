@@ -1,11 +1,18 @@
 ﻿#include <Arduino.h>
+
+#define TOTEM_USE_WIFI
+
+#ifdef TOTEM_USE_WIFI
+#include "index.h"
 #include <ArduinoJson.h>
 #include <AsyncJson.h>
 #include <DNSServer.h>
 #include <ESPAsyncWebServer.h>
+#include <WiFi.h>
+#endif
+
 #include <GFX_Layer.hpp>
 #include <GFX_Lite.h>
-#include <WiFi.h>
 #include <atomic>
 #include <cstring>
 
@@ -14,20 +21,52 @@
 #include "Microphone.h"
 #include "Registry.h"
 #include "Util.h"
-#include "index.h"
 
 #include "patterns/Audio2dGridPattern.h"
 #include "patterns/Audio2dWavesPattern.h"
 #include "patterns/Audio3dGridPattern.h"
 #include "patterns/Audio8x8SquaresPattern.h"
+#include "patterns/AudioAtomicPattern.h"
+#include "patterns/AudioBouncingDotsPattern.h"
+#include "patterns/AudioBreathingMandalaPattern.h"
+#include "patterns/AudioBreathingRingsPattern.h"
 #include "patterns/AudioClassicSpectrum128Pattern.h"
+#include "patterns/AudioCometPattern.h"
+#include "patterns/AudioCrystalLatticePattern.h"
 #include "patterns/AudioCubesPattern.h"
 #include "patterns/AudioDiagonalSpectrumPattern.h"
 #include "patterns/AudioDotsSinglePattern.h"
+#include "patterns/AudioGeometricFlowerPattern.h"
+#include "patterns/AudioHurricanePattern.h"
+#include "patterns/AudioLavaLampPattern.h"
+#include "patterns/AudioLissajousCurvesPattern.h"
+#include "patterns/AudioMandalaLayersPattern.h"
+#include "patterns/AudioMandelbrotPattern.h"
+#include "patterns/AudioMeteorShowerPattern.h"
+#include "patterns/AudioNeuralNetworkPattern.h"
+#include "patterns/AudioOrbitPattern.h"
+#include "patterns/AudioParticleFlowPattern.h"
+#include "patterns/AudioPlasmaWavesPattern.h"
+#include "patterns/AudioPlatonicSolidsPattern.h"
+#include "patterns/AudioRainMatrixPattern.h"
+#include "patterns/AudioRipplesPattern.h"
+#include "patterns/AudioRotatingBarsPattern.h"
+#include "patterns/AudioSimpleDiagonalPattern.h"
+#include "patterns/AudioSimpleTrianglesPattern.h"
+#include "patterns/AudioSpaceDebrisPattern.h"
+#include "patterns/AudioSpectrumDotsPattern.h"
 #include "patterns/AudioSpectrumPattern.h"
+#include "patterns/AudioSpiralGalaxyPattern.h"
+#include "patterns/AudioSpiralPattern.h"
+#include "patterns/AudioSpiralsPattern.h"
+#include "patterns/AudioStarfieldPattern.h"
+#include "patterns/AudioTessellationPattern.h"
 #include "patterns/AudioTrianglesPattern.h"
+#include "patterns/AudioTunnelPattern.h"
+#include "patterns/AudioWaveInterferencePattern.h"
+#include "patterns/AudioWaveformPattern.h"
+#include "patterns/AudioWormholePattern.h"
 #include "patterns/AuroraDropPattern.h"
-#include "patterns/BigSparkPattern.h"
 #include "patterns/CirclesPattern.h"
 #include "patterns/DNAHelixPattern.h"
 #include "patterns/FlowerOfLifePattern.h"
@@ -53,11 +92,9 @@
 
 static Microphone mic;
 static std::unique_ptr<MatrixPanel_I2S_DMA> dmaDisplay;
+static std::atomic<uint8_t> globalBrightness{200};
 
-static AsyncWebServer server(80);
-static DNSServer dnsServer;
-static constexpr byte DNS_PORT = 53;
-
+#ifdef TOTEM_USE_WIFI
 enum class TotemState
 {
     MUSIC,
@@ -67,10 +104,11 @@ enum class TotemState
 
 static std::atomic currentTotemState{TotemState::MUSIC};
 static std::mutex stateMutex;
-static std::atomic<uint8_t> globalBrightness{255};
-
 static std::shared_ptr<Pattern> patternState;
 
+static AsyncWebServer server(80);
+static DNSServer dnsServer;
+static constexpr byte DNS_PORT = 53;
 static auto commandEndpoint = new AsyncCallbackJsonWebHandler("/command");
 static auto brightnessEndpoint = new AsyncCallbackJsonWebHandler("/brightness");
 static auto getPatternIdsEndpoint = new AsyncCallbackJsonWebHandler("/patterns");
@@ -237,6 +275,7 @@ static void startServer()
     // Start server
     server.begin();
 }
+#endif
 
 void setup()
 {
@@ -279,14 +318,47 @@ void setup()
     Registry::add<Audio2dWavesPattern>();
     Registry::add<Audio3dGridPattern>();
     Registry::add<Audio8x8SquaresPattern>();
+    Registry::add<AudioAtomicPattern>();
+    Registry::add<AudioBouncingDotsPattern>();
+    Registry::add<AudioBreathingMandalaPattern>();
+    Registry::add<AudioBreathingRingsPattern>();
     Registry::add<AudioClassicSpectrum128Pattern>();
+    Registry::add<AudioCometPattern>();
+    Registry::add<AudioCrystalLatticePattern>();
     Registry::add<AudioCubesPattern>();
     Registry::add<AudioDiagonalSpectrumPattern>();
     Registry::add<AudioDotsSinglePattern>();
+    Registry::add<AudioGeometricFlowerPattern>();
+    Registry::add<AudioHurricanePattern>();
+    Registry::add<AudioLavaLampPattern>();
+    Registry::add<AudioLissajousCurvesPattern>();
+    Registry::add<AudioMandalaLayersPattern>();
+    Registry::add<AudioMandelbrotPattern>();
+    Registry::add<AudioMeteorShowerPattern>();
+    Registry::add<AudioNeuralNetworkPattern>();
+    Registry::add<AudioOrbitPattern>();
+    Registry::add<AudioParticleFlowPattern>();
+    Registry::add<AudioPlasmaWavesPattern>();
+    Registry::add<AudioPlatonicSolidsPattern>();
+    Registry::add<AudioRainMatrixPattern>();
+    Registry::add<AudioRipplesPattern>();
+    Registry::add<AudioRotatingBarsPattern>();
+    Registry::add<AudioSimpleDiagonalPattern>();
+    Registry::add<AudioSimpleTrianglesPattern>();
+    Registry::add<AudioSpaceDebrisPattern>();
+    Registry::add<AudioSpectrumDotsPattern>();
     Registry::add<AudioSpectrumPattern>();
+    Registry::add<AudioSpiralGalaxyPattern>();
+    Registry::add<AudioSpiralPattern>();
+    Registry::add<AudioSpiralsPattern>();
+    Registry::add<AudioStarfieldPattern>();
+    Registry::add<AudioTessellationPattern>();
     Registry::add<AudioTrianglesPattern>();
+    Registry::add<AudioTunnelPattern>();
+    Registry::add<AudioWaveInterferencePattern>();
+    Registry::add<AudioWaveformPattern>();
+    Registry::add<AudioWormholePattern>();
     Registry::add<AuroraDropPattern>();
-    Registry::add<BigSparkPattern>();
     Registry::add<CirclesPattern>();
     Registry::add<DNAHelixPattern>();
     Registry::add<FlowerOfLifePattern>();
@@ -311,7 +383,9 @@ void setup()
     Registry::add<MusicPlaylist>();
     Registry::get(MusicPlaylist::ID)->start();
 
+#ifdef TOTEM_USE_WIFI
     startServer();
+#endif
 }
 
 static uint32_t ms = 0;
@@ -319,14 +393,17 @@ static uint32_t fps = 0;
 
 void loop()
 {
+#ifdef TOTEM_USE_WIFI
     dnsServer.processNextRequest();
     std::lock_guard lock(stateMutex);
+#endif
 
     Pattern::clearAllGfx();
     mic.getContext(Pattern::Audio);
     Pattern::updateBpmOscillators(Pattern::Audio.bpm);
     random16_set_seed(UINT16_MAX * Pattern::Audio.energy64f / 63.0f);
 
+#ifdef TOTEM_USE_WIFI
     switch (currentTotemState.load())
     {
         case TotemState::GIF:
@@ -366,13 +443,19 @@ void loop()
         }
         break;
     }
+#else
+    Registry::get(MusicPlaylist::ID)->render();
+#endif
 
     dmaDisplay->setBrightness8(globalBrightness.load());
     for (int16_t y = 0; y < dmaDisplay->height(); ++y)
     {
         for (int16_t x = 0; x < dmaDisplay->width(); ++x)
         {
-            const CRGB &led = Pattern::Gfx(x, y) + Pattern::GfxBkg(x, y);
+            // Rotate 90 degrees clockwise
+            const int16_t gfx_x = y;
+            const int16_t gfx_y = MATRIX_WIDTH - 1 - x;
+            const CRGB &led = Pattern::Gfx(gfx_x, gfx_y) + Pattern::GfxBkg(gfx_x, gfx_y);
             dmaDisplay->drawPixelRGB888(x, y, led.r, led.g, led.b);
         }
     }
@@ -380,7 +463,7 @@ void loop()
     fps++;
     if (millis() - ms > 1000)
     {
-        Serial.printf("FPS: %d\n", fps);
+        Serial.printf("FPS: %d\tBPM: %d\tTB: %d\n", fps, Pattern::Audio.bpm, Pattern::Audio.totalBeats);
         ms = millis();
         fps = 0;
     }
